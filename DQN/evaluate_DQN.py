@@ -10,7 +10,8 @@ import mpnn as gnn
 from collections import deque
 import tensorflow as tf
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+# os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 ENV_NAME_AGENT = 'GraphEnv-v1'
 ENV_NAME = 'GraphEnv-v1'
@@ -39,9 +40,9 @@ hparams = {
     'dropout_rate': 0.01,
     'link_state_dim': 20,
     'readout_units': 35,
-    'learning_rate': 0.0001,
+    'learning_rate': 0.001, # 0.0001
     'batch_size': 32,
-    'T': 4, 
+    'T': 6, #4, 
     'num_demands': len(listofDemands)
 }
 
@@ -49,7 +50,7 @@ class SAPAgent:
     # Shortest Available Path
     # Select the shortest available path among the K paths
     def __init__(self):
-        self.K = 4
+        self.K = 6 #4
 
     def act(self, env, state, demand, n1, n2):
         pathList = env.allPaths[str(n1) +':'+ str(n2)]
@@ -83,7 +84,7 @@ class LBAgent:
     # Load Balancing agent
     # Selects the path among the K paths with uniform probability
     def __init__(self):
-        self.K = 4
+        self.K = 6 #4
 
     def act(self, env, state, demand, n1, n2):
         pathList = env.allPaths[str(n1) +':'+  str(n2)]
@@ -157,7 +158,7 @@ class DQNAgent:
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.995
         self.writer = None
-        self.K = 4
+        self.K = 6 #4
         self.listQValues = None
         self.action = None
         self.capacity_feature = None
@@ -267,7 +268,11 @@ class DQNAgent:
         are normalized on the fly.
         """
         self.bw_demand_feature.fill(0.0)
-        self.capacity_feature = (copyGraph[:,0] - 100.00000001) / 200.0
+        # Normalize capacity feature
+        # self.capacity_feature = (copyGraph[:,0] - 100.00000001) / 200.0
+        cap = np.array(copyGraph[:, 0])
+        max_cap = np.amax(cap)
+        self.capacity_feature = (copyGraph[:, 0] - (max_cap / 2)) / max_cap
 
         itera = 0
         for i in copyGraph[:, 1]:
@@ -530,10 +535,14 @@ if __name__ == "__main__":
 
     dqn_agent = DQNAgent(env_dqn)
     checkpoint_dir = "./models" + differentiation_str
+    
+    # checkpoint_dir = "./Results" + "/models" + differentiation_str
+    # model_id = 33
+    
     checkpoint = tf.train.Checkpoint(model=dqn_agent.primary_network, optimizer=dqn_agent.optimizer)
     # Restore variables on creation if a checkpoint exists.
-    checkpoint.restore(checkpoint_dir + "/ckpt-" + str(model_id))
-    print("Load model " + checkpoint_dir + "/ckpt-" + str(model_id))
+    checkpoint.restore(checkpoint_dir + "/" + str(hparams['T']) + "/ckpt-" + str(model_id))
+    print("Load model " + checkpoint_dir + "/" + str(hparams['T']) + "/ckpt-" + str(model_id))
 
     means_sap = np.zeros(NUMBER_EPISODES)
     means_dqn = np.zeros(NUMBER_EPISODES)
@@ -568,21 +577,25 @@ if __name__ == "__main__":
 
     plt.rcParams.update({'font.size': 12})
     plt.plot(rewards_dqn, 'r', label="DQN")
+    # print(rewards_dqn)
     plt.plot(rewards_sap, 'b', label="SAP")
     plt.plot(rewards_lb, 'g', label="LB")
 
     #DQN
     mean = np.mean(rewards_dqn) 
+    print(mean)
     means_dqn.fill(mean)
     plt.plot(means_dqn, 'r', linestyle="-.")
 
     #SAP
     mean = np.mean(rewards_sap) 
+    print(mean)
     means_sap.fill(mean)
     plt.plot(means_sap, 'b', linestyle=":")
 
     #LB
     mean = np.mean(rewards_lb) 
+    print(mean)
     means_lb.fill(mean)
     plt.plot(means_lb, 'g', linestyle="--")
 
@@ -591,6 +604,6 @@ if __name__ == "__main__":
     lgd = plt.legend(loc="lower left", bbox_to_anchor=(0.1, -0.24),
             ncol=4, fancybox=True, shadow=True)
     
-    plt.savefig("./Images/ModelEval"+topo+".pdf", bbox_extra_artists=(lgd,), bbox_inches='tight')
+    plt.savefig("./Images/ModelEval" + topo + "_" + str(hparams['T']) + ".png", bbox_extra_artists=(lgd,), bbox_inches='tight') #original: pdf
     #plt.show()
 

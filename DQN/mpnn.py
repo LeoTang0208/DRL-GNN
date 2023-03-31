@@ -7,6 +7,19 @@ import tensorflow as tf
 from tensorflow import keras
 from keras import regularizers
 
+"""
+hparams = {
+    'l2': 0.1,
+    'dropout_rate': 0.01,
+    'link_state_dim': 20,
+    'readout_units': 35,
+    'learning_rate': 0.001, # 0.0001
+    'batch_size': 32,
+    'T': 4, 
+    'num_demands': len(listofDemands)
+}
+"""
+
 class myModel(tf.keras.Model):
     def __init__(self, hparams):
         super(myModel, self).__init__()

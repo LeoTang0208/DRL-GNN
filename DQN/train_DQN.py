@@ -17,12 +17,13 @@ import multiprocessing
 import time as tt
 import glob
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+# os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 ENV_NAME = 'GraphEnv-v1'
 graph_topology = 0 # 0==NSFNET, 1==GEANT2, 2==Small Topology, 3==GBN
 SEED = 37
-ITERATIONS = 10000
+ITERATIONS = 1000 #! Original: 10000
 TRAINING_EPISODES = 20
 EVALUATION_EPISODES = 40
 FIRST_WORK_TRAIN_EPISODE = 60
@@ -59,9 +60,9 @@ hparams = {
     'dropout_rate': 0.01,
     'link_state_dim': 20,
     'readout_units': 35,
-    'learning_rate': 0.0001,
+    'learning_rate': 0.001, # 0.0001
     'batch_size': 32,
-    'T': 4, 
+    'T': 6, #4, 
     'num_demands': len(listofDemands)
 }
 
@@ -83,7 +84,7 @@ class DQNAgent:
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.995
         self.writer = None
-        self.K = 4 # K-paths
+        self.K = 6 #4 # K-paths
         self.listQValues = None
         self.numbersamples = batch_size
         self.action = None
@@ -104,6 +105,7 @@ class DQNAgent:
         Picks the state according to epsilon-greedy approach. The flag=TRUE indicates that we are testing
         the model and thus, it won't activate the drop layers.
         """
+        
         # Set to True if we need to compute K=4 q-values and take the maxium
         takeMax_epsilon = False
         # List of graphs
@@ -160,6 +162,13 @@ class DQNAgent:
             path = path + 1
 
         vs = [v for v in list_k_features]
+        
+        """
+        vs: ({'link_state': <tf.Tensor: shape=(21, 20), numpy=[], dtype=float32)>, 
+              'first': <tf.Tensor: shape=(88,), dtype=int32, numpy=[]>, 
+              'second': <tf.Tensor: shape=(88,), dtype=int32, numpy=[]>, 
+              'num_edges': 21})
+        """
 
         # We compute the graphs_ids to later perform the unsorted_segment_sum for each graph and obtain the 
         # link hidden states for each graph.
@@ -174,11 +183,24 @@ class DQNAgent:
             'second': tf.concat([v['second'] + m for v, m in zip(vs, second_offset)], axis=0),
             'num_edges': tf.math.add_n([v['num_edges'] for v in vs]),
             }
-        )        
+        )
+        
+        """
+        1. graph_id: k=0~3 for 4 different shortest paths, all containing 21 links, size=21*4=84
+        2. link_state: [(21*4), 20]
+        3. first, second: 88*4=352 links adjacency
+        4. num_edges: 21*4=84
+        """
 
         # Predict qvalues for all graphs within tensors
         self.listQValues = self.primary_network(tensors['link_state'], tensors['graph_id'], tensors['first'],
                         tensors['second'], tensors['num_edges'], training=False).numpy()
+        
+        """
+        self.listQValues: k*1 tensor --> 4 different Q values
+        """
+        
+        # print(source, destination, self.listQValues)
 
         if takeMax_epsilon:
             # We take the path with highest q-value
@@ -195,7 +217,10 @@ class DQNAgent:
         """
         self.bw_allocated_feature.fill(0.0)
         # Normalize capacity feature
-        self.capacity_feature = (copyGraph[:,0] - 100.00000001) / 200.0
+        # self.capacity_feature = (copyGraph[:,0] - 100.00000001) / 200.0
+        cap = np.array(copyGraph[:, 0])
+        max_cap = np.amax(cap)
+        self.capacity_feature = (copyGraph[:, 0] - (max_cap / 2)) / max_cap
 
         iter = 0
         for i in copyGraph[:, 1]:
@@ -227,6 +252,28 @@ class DQNAgent:
 
         inputs = {'link_state': link_state, 'first': sample['first'][0:sample['length']],
                   'second': sample['second'][0:sample['length']], 'num_edges': sample['num_edges']}
+        
+        """
+        1.  link_state: 21*20 tensor, 21 --> num_edges, 
+            20 --> capacity range [-0.5, 0.5], 
+            betweenness range [-0.5, 0.5], 
+            hidden_states [0/1, 0/1, 0/1] for [64, 32, 8], 
+            15 for padding filled with 0
+            
+        2.  first, second: All adjacent links based on links in the graph
+            >> 0 1      link no. 0
+            >>>> 0 2    link no. 1
+            >>>> 0 3    link no. 2
+            >>>> 1 2    link no. 3
+            >>>> 1 7    link no. 4
+            
+            translates to first, second:
+            
+            [0, 0, 0, 0]
+            [1, 2, 3, 4]
+            
+        3. num_edges: num of edges in graph
+        """
 
         return inputs
     
@@ -295,7 +342,7 @@ class DQNAgent:
 
         # Hard weights update
         if episode % copy_weights_interval == 0:
-            self.target_network.set_weights(self.primary_network.get_weights()) 
+            self.target_network.set_weights(self.primary_network.get_weights())
         # if episode % evaluation_interval == 0:
         #     self._write_tf_summary(grad, loss)
         gc.collect()
@@ -381,11 +428,12 @@ if __name__ == "__main__":
 
     # We store all the information in a Log file and later we parse this file 
     # to extract all the relevant information
-    fileLogs = open("./Logs/exp" + differentiation_str + "Logs.txt", "a")
+    fileLogs = open("./Logs/exp" + differentiation_str + "Logs.txt", "w")
+    # Original: "a"
 
     if not os.path.exists(checkpoint_dir):
         os.makedirs(checkpoint_dir)
-    checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt")
+    checkpoint_prefix = os.path.join(checkpoint_dir, str(hparams['T']), "ckpt")
 
     checkpoint = tf.train.Checkpoint(model=agent.primary_network, optimizer=agent.optimizer)
 
@@ -441,6 +489,7 @@ if __name__ == "__main__":
                 destination = new_destination
                 if done:
                     break
+                # Run until can't make demand
 
         agent.replay(ep_it)
 
@@ -463,6 +512,8 @@ if __name__ == "__main__":
                     state = new_state
                     if done:
                         break
+                    # Run until can't make demand
+
                 rewards_test[eps] = rewardAddTest
             evalMeanReward = np.mean(rewards_test)
 
@@ -497,6 +548,8 @@ if __name__ == "__main__":
             state = new_state
             if done:
                 break
+            # Run until can't make demand
+        
         rewards_test[eps] = rewardAddTest
     evalMeanReward = np.mean(rewards_test)
 

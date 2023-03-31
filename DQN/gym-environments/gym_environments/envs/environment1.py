@@ -88,14 +88,32 @@ def generate_nx_graph(topology):
 def compute_link_betweenness(g, k):
     n = len(g.nodes())
     betw = []
+    
+    betw_sum = 0
+    
     for i, j in g.edges():
         # we add a very small number to avoid division by zero
         b_link = g.get_edge_data(i, j)['numsp'] / ((2.0 * n * (n - 1) * k) + 0.00000001)
+        
+        # print(b_link)
+        betw_sum = betw_sum + b_link
+        
         g.get_edge_data(i, j)['betweenness'] = b_link
         betw.append(b_link)
 
     mu_bet = np.mean(betw)
     std_bet = np.std(betw)
+
+    cap = []
+
+    for i, j in g.edges():
+        x = mu_bet + 3 * (g.get_edge_data(i, j)['betweenness'] - mu_bet)
+        cap.append(float(len(g.edges()) * 200 * x / betw_sum))
+        g.get_edge_data(i, j)["capacity"] = float(len(g.edges()) * 200 * x / betw_sum) # here
+        print(g.get_edge_data(i, j)["capacity"])
+    
+    print(">>>", np.std(cap))
+
     return mu_bet, std_bet
 
 class Env1(gym.Env):
@@ -105,8 +123,8 @@ class Env1(gym.Env):
 
     self.graph_state[:][0] = CAPACITY
     self.graph_state[:][1] = BW_ALLOCATED
-  """
-    def __init__(self):
+    """
+    def __init__(self): # Define K=4, others all None, self.allPaths=Empty
         self.graph = None
         self.initial_state = None
         self.source = None
@@ -127,7 +145,7 @@ class Env1(gym.Env):
         self.std_bet = None
 
         self.max_demand = 0
-        self.K = 4
+        self.K = 6 #4
         self.listofDemands = None
         self.nodes = None
         self.ordered_edges = None
@@ -141,10 +159,10 @@ class Env1(gym.Env):
         self.allPaths = dict()
 
     def seed(self, seed):
-        random.seed(seed)
-        np.random.seed(seed)
+        random.seed()
+        np.random.seed()
 
-    def num_shortest_path(self, topology):
+    def num_shortest_path(self, topology): # Find K=4 shortest paths from all n1 and n2 pairs in the topology
         self.diameter = nx.diameter(self.graph)
 
         # Iterate over all node1,node2 pairs from the graph
@@ -182,24 +200,33 @@ class Env1(gym.Env):
                     gc.collect()
 
 
-    def _first_second_between(self):
+    def _first_second_between(self): # (i, j) link in self.ordered_edges, find all (m, n) link that are neighbour to (i, j) (m = i, or n = j)
         self.first = list()
         self.second = list()
 
         # For each edge we iterate over all neighbour edges
+        # count = 0
         for i, j in self.ordered_edges:
+            # print(">>>", i, j)
             neighbour_edges = self.graph.edges(i)
-
             for m, n in neighbour_edges:
                 if ((i != m or j != n) and (i != n or j != m)):
+                    # print(">>>>>", m, n)
                     self.first.append(self.edgesDict[str(i) +':'+ str(j)])
                     self.second.append(self.edgesDict[str(m) +':'+ str(n)])
+                    # count = count + 1
 
             neighbour_edges = self.graph.edges(j)
             for m, n in neighbour_edges:
                 if ((i != m or j != n) and (i != n or j != m)):
+                    # print(">>>>>", m, n)
                     self.first.append(self.edgesDict[str(i) +':'+ str(j)])
                     self.second.append(self.edgesDict[str(m) +':'+ str(n)])
+                    # count = count + 1
+        
+        # print("Count: ", count)
+        # print(self.first)
+        # print(self.second)
 
 
     def generate_environment(self, topology, listofdemands):
@@ -264,6 +291,8 @@ class Env1(gym.Env):
             if self.graph_state[self.edgesDict[str(currentPath[i]) + ':' + str(currentPath[j])]][0] < 0:
                 # FINISH IF LINKS CAPACITY <0
                 return self.graph_state, self.reward, self.episode_over, self.demand, self.source, self.destination 
+                #      new_state,        reward,      done,              demand,      source,      destination
+                # Done=True --> not enough capacity
             i = i + 1
             j = j + 1
 
@@ -285,6 +314,8 @@ class Env1(gym.Env):
                 break
 
         return self.graph_state, self.reward, self.episode_over, self.demand, self.source, self.destination
+        #      new_state,        reward,      done,              demand,      source,      destination
+        # Done=False --> all enough capacity
 
     def reset(self):
         """
