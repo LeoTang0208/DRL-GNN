@@ -1,7 +1,4 @@
-# Copyright (c) 2021, Paul Almasan [^1]
-#
-# [^1]: Universitat Politècnica de Catalunya, Computer Architecture
-#     department, Barcelona, Spain. Email: felician.paul.almasan@upc.edu
+# Copyright (c) 2021, Paul Almasan
 
 import numpy as np
 import gym
