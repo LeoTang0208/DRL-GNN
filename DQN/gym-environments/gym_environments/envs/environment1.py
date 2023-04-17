@@ -50,7 +50,28 @@ def create_gbn_graph():
 
     return Gbase
 
-def generate_nx_graph(topology):
+def create_random_graph(size, seed):
+    Gbase = nx.Graph()
+    
+    random.seed(seed)
+    
+    node_list = []
+    for i in range(size):
+        node_list.append(i)
+    Gbase.add_nodes_from(node_list)
+
+    while (not nx.is_connected(Gbase)):
+        u = random.randint(0, (size - 1))
+        
+        v = random.randint(0, (size - 1))
+        while (u == v):
+            v = random.randint(0, (size - 1))
+            
+        Gbase.add_edge(u, v)
+    
+    return Gbase
+
+def generate_nx_graph(topology, size, seed):
     """
     Generate graphs for training with the same topology.
     """
@@ -60,8 +81,10 @@ def generate_nx_graph(topology):
         G = create_geant2_graph()
     elif topology == 2:
         G = create_small_top()
-    else:
+    elif topology == 3:
         G = create_gbn_graph()
+    else:
+        G = create_random_graph(size, seed)
 
     # nx.draw(G, with_labels=True)
     # plt.show()
@@ -104,7 +127,7 @@ def compute_link_betweenness(g, k):
     cap = []
 
     for i, j in g.edges():
-        x = mu_bet + 3 * (g.get_edge_data(i, j)['betweenness'] - mu_bet)
+        x = mu_bet + 3 * (g.get_edge_data(i, j)['betweenness'] - mu_bet) #!!!
         cap.append(float(len(g.edges()) * 200 * x / betw_sum))
         g.get_edge_data(i, j)["capacity"] = float(len(g.edges()) * 200 * x / betw_sum) # here
         print(g.get_edge_data(i, j)["capacity"])
@@ -142,7 +165,7 @@ class Env1(gym.Env):
         self.std_bet = None
 
         self.max_demand = 0
-        self.K = 6 #4
+        self.K = 8 #4
         self.listofDemands = None
         self.nodes = None
         self.ordered_edges = None
@@ -226,9 +249,9 @@ class Env1(gym.Env):
         # print(self.second)
 
 
-    def generate_environment(self, topology, listofdemands):
+    def generate_environment(self, topology, listofdemands, size, seed):
         # The nx graph will only be used to convert graph from edges to nodes
-        self.graph = generate_nx_graph(topology)
+        self.graph = generate_nx_graph(topology, size, seed)
 
         self.listofDemands = listofdemands
 

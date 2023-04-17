@@ -33,6 +33,8 @@ NUM_SAMPLES_EPSD = 100
 
 # Set evaluation topology
 graph_topology = 0 # 0==NSFNET, 1==GEANT2, 2==Small Topology, 3==GBN
+# NEW! 4 == Random Graph
+
 listofDemands = [8, 32, 64]
 
 hparams = {
@@ -40,9 +42,9 @@ hparams = {
     'dropout_rate': 0.01,
     'link_state_dim': 20,
     'readout_units': 35,
-    'learning_rate': 0.001, # 0.0001
+    'learning_rate': 0.0001, # 0.0001
     'batch_size': 32,
-    'T': 6, #4, 
+    'T': 8, #4, 
     'num_demands': len(listofDemands)
 }
 
@@ -50,7 +52,7 @@ class SAPAgent:
     # Shortest Available Path
     # Select the shortest available path among the K paths
     def __init__(self):
-        self.K = 6 #4
+        self.K = 8 #4
 
     def act(self, env, state, demand, n1, n2):
         pathList = env.allPaths[str(n1) +':'+ str(n2)]
@@ -84,7 +86,7 @@ class LBAgent:
     # Load Balancing agent
     # Selects the path among the K paths with uniform probability
     def __init__(self):
-        self.K = 6 #4
+        self.K = 8 #4
 
     def act(self, env, state, demand, n1, n2):
         pathList = env.allPaths[str(n1) +':'+  str(n2)]
@@ -158,7 +160,7 @@ class DQNAgent:
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.995
         self.writer = None
-        self.K = 6 #4
+        self.K = 8 #4
         self.listQValues = None
         self.action = None
         self.capacity_feature = None
@@ -310,7 +312,7 @@ class DQNAgent:
 def exec_lb_model_episodes(experience_memory, graph_topology):
     env_lb = gym.make(ENV_NAME)
     env_lb.seed(SEED)
-    env_lb.generate_environment(graph_topology, listofDemands)
+    env_lb.generate_environment(graph_topology, listofDemands, rand_size, rand_seed)
 
     agent = LBAgent()
     rewards_lb = np.zeros(NUMBER_EPISODES)
@@ -376,7 +378,7 @@ def exec_lb_model_episodes(experience_memory, graph_topology):
 def exec_sap_model_episodes(experience_memory, graph_topology):
     env_sap = gym.make(ENV_NAME)
     env_sap.seed(SEED)
-    env_sap.generate_environment(graph_topology, listofDemands)
+    env_sap.generate_environment(graph_topology, listofDemands, rand_size, rand_seed)
 
     agent = SAPAgent()
     rewards_sap = np.zeros(NUMBER_EPISODES)
@@ -500,6 +502,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Parse file and create plots')
 
     parser.add_argument('-d', help='data file', type=str, required=True, nargs='+')
+    parser.add_argument('-s', type=int, required=True)
+    parser.add_argument('-e', type=int, required=True)
     args = parser.parse_args()
 
     aux = args.d[0].split(".")
@@ -508,6 +512,11 @@ if __name__ == "__main__":
 
     if not os.path.exists("./Images"):
         os.makedirs("./Images")
+    
+    # TODO: Parse rand_size and rand_seed
+    rand_size = args.s
+    rand_seed = args.e
+    # print(">>", rand_size, rand_seed)
 
     topo = ""
     if graph_topology==0:
@@ -516,8 +525,10 @@ if __name__ == "__main__":
         topo = "GEANT2"
     elif graph_topology==2:
         topo = "Small_Top"
-    else:
+    elif graph_topology==3:
         topo = "GBN"
+    else:
+        topo = "Rand"
 
     # Uncomment the following if you want to store the demands in a file
     # store_experiences = open("Traffic_demands_"+topo+"_1K.txt", "w")
@@ -531,10 +542,10 @@ if __name__ == "__main__":
 
     env_dqn = gym.make(ENV_NAME_AGENT)
     env_dqn.seed(SEED)
-    env_dqn.generate_environment(graph_topology, listofDemands)
+    env_dqn.generate_environment(graph_topology, listofDemands, rand_size, rand_seed)
 
     dqn_agent = DQNAgent(env_dqn)
-    checkpoint_dir = "./models" + differentiation_str
+    checkpoint_dir = "./models" + "sample_DQN_agent_orig"
     
     # checkpoint_dir = "./Results" + "/models" + differentiation_str
     # model_id = 33
@@ -577,26 +588,25 @@ if __name__ == "__main__":
 
     plt.rcParams.update({'font.size': 12})
     plt.plot(rewards_dqn, 'r', label="DQN")
-    # print(rewards_dqn)
     plt.plot(rewards_sap, 'b', label="SAP")
     plt.plot(rewards_lb, 'g', label="LB")
 
     #DQN
-    mean = np.mean(rewards_dqn) 
-    print(mean)
-    means_dqn.fill(mean)
+    mean_dqn = np.mean(rewards_dqn) 
+    print(mean_dqn, len(rewards_dqn))
+    means_dqn.fill(mean_dqn)
     plt.plot(means_dqn, 'r', linestyle="-.")
 
     #SAP
-    mean = np.mean(rewards_sap) 
-    print(mean)
-    means_sap.fill(mean)
+    mean_sap = np.mean(rewards_sap) 
+    print(mean_sap, len(rewards_sap))
+    means_sap.fill(mean_sap)
     plt.plot(means_sap, 'b', linestyle=":")
 
     #LB
-    mean = np.mean(rewards_lb) 
-    print(mean)
-    means_lb.fill(mean)
+    mean_lb = np.mean(rewards_lb) 
+    print(mean_lb, len(rewards_lb))
+    means_lb.fill(mean_lb)
     plt.plot(means_lb, 'g', linestyle="--")
 
     plt.xlabel("Episodes", fontsize=14, fontweight='bold')
@@ -606,4 +616,12 @@ if __name__ == "__main__":
     
     plt.savefig("./Images/ModelEval" + topo + "_" + str(hparams['T']) + ".png", bbox_extra_artists=(lgd,), bbox_inches='tight') #original: pdf
     #plt.show()
-
+    
+    file = open("./results_orig_diff_capa.txt", "a")
+    # for i in range(NUMBER_EPISODES):
+    #     file.write(str(rewards_dqn[i]) + " " + str(rewards_sap[i]) + " " + str(rewards_lb[i]) + "\n")
+    #     file.flush()
+    # file.close()
+    file.write(str(3) + " " + str(mean_dqn) + " " + str(mean_sap) + " " + str(mean_lb) + "\n")
+    file.flush()
+    file.close()

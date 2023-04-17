@@ -19,8 +19,12 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 ENV_NAME = 'GraphEnv-v1'
 graph_topology = 0 # 0==NSFNET, 1==GEANT2, 2==Small Topology, 3==GBN
+# New!
+rand_size = 0
+rand_seed = 0
+
 SEED = 37
-ITERATIONS = 1000 #! Original: 10000
+ITERATIONS = 10000 #! Original: 10000
 TRAINING_EPISODES = 20
 EVALUATION_EPISODES = 40
 FIRST_WORK_TRAIN_EPISODE = 60
@@ -28,8 +32,8 @@ FIRST_WORK_TRAIN_EPISODE = 60
 MULTI_FACTOR_BATCH = 6 # Number of batches used in training
 TAU = 0.08 # Only used in soft weights copy
 
-differentiation_str = "sample_DQN_agent"
-checkpoint_dir = "./models"+differentiation_str
+differentiation_str = "sample_DQN_agent_orig"
+checkpoint_dir = "./models" + differentiation_str
 store_loss = 3 # Store the loss every store_loss batches
 
 os.environ['PYTHONHASHSEED']=str(SEED)
@@ -44,7 +48,7 @@ random.seed(SEED)
 
 tf.random.set_seed(1)
 
-train_dir = "./TensorBoard/"+differentiation_str
+train_dir = "./TensorBoard/" + differentiation_str
 # summary_writer = tf.summary.create_file_writer(train_dir)
 listofDemands = [8, 32, 64]
 copy_weights_interval = 50
@@ -57,9 +61,9 @@ hparams = {
     'dropout_rate': 0.01,
     'link_state_dim': 20,
     'readout_units': 35,
-    'learning_rate': 0.001, # 0.0001
+    'learning_rate': 0.0001, # 0.0001
     'batch_size': 32,
-    'T': 6, #4, 
+    'T': 8, #4, 
     'num_demands': len(listofDemands)
 }
 
@@ -81,7 +85,7 @@ class DQNAgent:
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.995
         self.writer = None
-        self.K = 6 #4 # K-paths
+        self.K = 8 #4 # K-paths
         self.listQValues = None
         self.numbersamples = batch_size
         self.action = None
@@ -403,14 +407,14 @@ if __name__ == "__main__":
     # python train_DQN.py
     # Get the environment and extract the number of actions.
     env_training = gym.make(ENV_NAME)
-    np.random.seed(SEED)
-    env_training.seed(SEED)
-    env_training.generate_environment(graph_topology, listofDemands)
+    np.random.seed() #SEED = 37 used
+    env_training.seed()
+    env_training.generate_environment(graph_topology, listofDemands, rand_size, rand_seed)
 
     env_eval = gym.make(ENV_NAME)
-    np.random.seed(SEED)
-    env_eval.seed(SEED)
-    env_eval.generate_environment(graph_topology, listofDemands)
+    np.random.seed() #SEED = 37 used
+    env_eval.seed()
+    env_eval.generate_environment(graph_topology, listofDemands, rand_size, rand_seed)
 
     batch_size = hparams['batch_size']
     agent = DQNAgent(batch_size)
@@ -425,7 +429,7 @@ if __name__ == "__main__":
 
     # We store all the information in a Log file and later we parse this file 
     # to extract all the relevant information
-    fileLogs = open("./Logs/exp" + differentiation_str + "Logs.txt", "w")
+    fileLogs = open("./Logs/exp" + differentiation_str + "_" + str(hparams['T']) + "_" + "Logs.txt", "w")
     # Original: "a"
 
     if not os.path.exists(checkpoint_dir):
