@@ -3,7 +3,7 @@ import random
 
 random.seed()
 
-cmd_base = "python evaluate_DQN.py -d ./Logs/expsample_DQN_agent_orig_4_Logs.txt"
+cmd_base = "python evaluate_DQN.py -d ./Logs/expsample_DQN_agent_orig_8_Logs.txt"
 
 # size = 40
 for j in range(10):

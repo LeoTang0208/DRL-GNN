@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import os
 
-f = open("results.txt", "r")
+f = open("results.txt", "r") #_orig_diff_capa
 
 num = []
 
@@ -11,7 +11,7 @@ for line in f:
     num.append(a)
 
 cnt = 1
-for k in (4, 6, 8, 10):
+for k in [4, 6, 8, 10]:
     x = []
     drl = []
     sap = []
@@ -19,9 +19,9 @@ for k in (4, 6, 8, 10):
     for i in range(len(num)):
         if (num[i][1] == k):
             x.append(num[i][0])
-            drl.append(num[i][2])
-            sap.append(num[i][3])
-            lb.append(num[i][4])
+            drl.append(float(num[i][2] * 64))
+            sap.append(float(num[i][3] * 64))
+            lb.append(float(num[i][4] * 64))
     
     x_m = [0, 0.5, 1, 1.5, 2, 2.5, 3]
     drl_m = []
@@ -34,16 +34,16 @@ for k in (4, 6, 8, 10):
         s3 = float(0)
         for i in range(len(num)):
             if ((num[i][1] == k) and (num[i][0] == x_)):
-                s1 = s1 + num[i][2]
-                s2 = s2 + num[i][3]
-                s3 = s3 + num[i][4]
+                s1 = s1 + float(num[i][2] * 64)
+                s2 = s2 + float(num[i][3] * 64)
+                s3 = s3 + float(num[i][4] * 64)
                 t = t + 1
         
         drl_m.append(float(s1 / t))
         sap_m.append(float(s2 / t))
         lb_m.append(float(s3 / t))
     
-    plt.subplot(2, 2, cnt)
+    # plt.subplot(2, 2, cnt)
     d1 = plt.scatter(x, drl, c = "r", s=5, alpha=0.5)
     d2 = plt.scatter(x, sap, c = "g", s=5, alpha=0.5)
     d3 = plt.scatter(x, lb, c = "b", s=5, alpha=0.5)
@@ -57,10 +57,10 @@ for k in (4, 6, 8, 10):
     plt.legend(loc = "upper right")
     
     plt.xlim([-0.1, 3.1])
-    plt.ylim([6, 18])
+    plt.ylim([300, 1100])
     
     plt.xlabel('Standard Deviation (\u03C3)', fontsize=12)
-    plt.ylabel('Score', fontsize=12)
+    plt.ylabel('Bandwidth Allocated', fontsize=12)
     
     plt.title('K = {} Shortest Paths Considered'.format(k))
     

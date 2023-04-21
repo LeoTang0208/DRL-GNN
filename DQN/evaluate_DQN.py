@@ -622,6 +622,6 @@ if __name__ == "__main__":
     #     file.write(str(rewards_dqn[i]) + " " + str(rewards_sap[i]) + " " + str(rewards_lb[i]) + "\n")
     #     file.flush()
     # file.close()
-    file.write(str(3) + " " + str(mean_dqn) + " " + str(mean_sap) + " " + str(mean_lb) + "\n")
+    file.write(str(0.0) + " " + str(hparams['T']) + " " + str(mean_dqn) + " " + str(mean_sap) + " " + str(mean_lb) + "\n")
     file.flush()
     file.close()

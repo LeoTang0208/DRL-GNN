@@ -127,7 +127,7 @@ def compute_link_betweenness(g, k):
     cap = []
 
     for i, j in g.edges():
-        x = mu_bet + 3 * (g.get_edge_data(i, j)['betweenness'] - mu_bet) #!!!
+        x = mu_bet + 0.0 * (g.get_edge_data(i, j)['betweenness'] - mu_bet) #!!!
         cap.append(float(len(g.edges()) * 200 * x / betw_sum))
         g.get_edge_data(i, j)["capacity"] = float(len(g.edges()) * 200 * x / betw_sum) # here
         print(g.get_edge_data(i, j)["capacity"])
