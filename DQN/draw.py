@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import os
 
-f = open("results.txt", "r") #_orig_diff_capa
+f = open("results_orig_diff_capa.txt", "r") #_orig_diff_capa
 
 num = []
 
@@ -11,7 +11,7 @@ for line in f:
     num.append(a)
 
 cnt = 1
-for k in [4, 6, 8, 10]:
+for k in [4]:
     x = []
     drl = []
     sap = []
