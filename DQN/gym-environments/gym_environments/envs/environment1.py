@@ -165,7 +165,7 @@ class Env1(gym.Env):
         self.std_bet = None
 
         self.max_demand = 0
-        self.K = 8 #4
+        self.K = 4 #4
         self.listofDemands = None
         self.nodes = None
         self.ordered_edges = None

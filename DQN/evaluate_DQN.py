@@ -32,7 +32,7 @@ NUMBER_EPISODES = 50
 NUM_SAMPLES_EPSD = 100
 
 # Set evaluation topology
-graph_topology = 0 # 0==NSFNET, 1==GEANT2, 2==Small Topology, 3==GBN
+graph_topology = 1 # 0==NSFNET, 1==GEANT2, 2==Small Topology, 3==GBN
 # NEW! 4 == Random Graph
 
 listofDemands = [8, 32, 64]
@@ -44,7 +44,7 @@ hparams = {
     'readout_units': 35,
     'learning_rate': 0.0001, # 0.0001
     'batch_size': 32,
-    'T': 8, #4, 
+    'T': 4, #4, 
     'num_demands': len(listofDemands)
 }
 
@@ -52,7 +52,7 @@ class SAPAgent:
     # Shortest Available Path
     # Select the shortest available path among the K paths
     def __init__(self):
-        self.K = 8 #4
+        self.K = 4 #4
 
     def act(self, env, state, demand, n1, n2):
         pathList = env.allPaths[str(n1) +':'+ str(n2)]
@@ -86,7 +86,7 @@ class LBAgent:
     # Load Balancing agent
     # Selects the path among the K paths with uniform probability
     def __init__(self):
-        self.K = 8 #4
+        self.K = 4 #4
 
     def act(self, env, state, demand, n1, n2):
         pathList = env.allPaths[str(n1) +':'+  str(n2)]
@@ -160,7 +160,7 @@ class DQNAgent:
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.995
         self.writer = None
-        self.K = 8 #4
+        self.K = 4 #4
         self.listQValues = None
         self.action = None
         self.capacity_feature = None
@@ -617,11 +617,11 @@ if __name__ == "__main__":
     plt.savefig("./Images/ModelEval" + topo + "_" + str(hparams['T']) + ".png", bbox_extra_artists=(lgd,), bbox_inches='tight') #original: pdf
     #plt.show()
     
-    file = open("./results_orig_diff_capa.txt", "a")
-    # for i in range(NUMBER_EPISODES):
-    #     file.write(str(rewards_dqn[i]) + " " + str(rewards_sap[i]) + " " + str(rewards_lb[i]) + "\n")
-    #     file.flush()
-    # file.close()
-    file.write(str(0.0) + " " + str(hparams['T']) + " " + str(mean_dqn) + " " + str(mean_sap) + " " + str(mean_lb) + "\n")
-    file.flush()
+    file = open("./results_GEANT2.txt", "a")
+    for i in range(NUMBER_EPISODES):
+        file.write(str(0.0) + " " + str(hparams['T']) + " "+ str(rewards_dqn[i]) + " " + str(rewards_sap[i]) + " " + str(rewards_lb[i]) + "\n")
+        file.flush()
     file.close()
+    # file.write(str(0.0) + " " + str(hparams['T']) + " " + str(mean_dqn) + " " + str(mean_sap) + " " + str(mean_lb) + "\n")
+    # file.flush()
+    # file.close()

@@ -63,7 +63,7 @@ hparams = {
     'readout_units': 35,
     'learning_rate': 0.0001, # 0.0001
     'batch_size': 32,
-    'T': 8, #4, 
+    'T': 4, #4, 
     'num_demands': len(listofDemands)
 }
 
@@ -85,7 +85,7 @@ class DQNAgent:
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.995
         self.writer = None
-        self.K = 8 #4 # K-paths
+        self.K = 4 #4 # K-paths
         self.listQValues = None
         self.numbersamples = batch_size
         self.action = None
