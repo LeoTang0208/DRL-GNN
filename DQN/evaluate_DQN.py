@@ -617,11 +617,10 @@ if __name__ == "__main__":
     plt.savefig("./Images/ModelEval" + topo + "_" + str(hparams['T']) + ".png", bbox_extra_artists=(lgd,), bbox_inches='tight') #original: pdf
     #plt.show()
     
-    file = open("./results_GEANT2.txt", "a")
-    for i in range(NUMBER_EPISODES):
-        file.write(str(0.0) + " " + str(hparams['T']) + " "+ str(rewards_dqn[i]) + " " + str(rewards_sap[i]) + " " + str(rewards_lb[i]) + "\n")
-        file.flush()
+    file = open("./results_GEANT2_diff_capa.txt", "a")
+    # for i in range(NUMBER_EPISODES):
+    #     file.write(str(0.0) + " " + str(hparams['T']) + " "+ str(rewards_dqn[i]) + " " + str(rewards_sap[i]) + " " + str(rewards_lb[i]) + "\n")
+    #     file.flush()
+    file.write(str(1.5) + " " + str(hparams['T']) + " " + str(mean_dqn) + " " + str(mean_sap) + " " + str(mean_lb) + "\n")
+    file.flush()
     file.close()
-    # file.write(str(0.0) + " " + str(hparams['T']) + " " + str(mean_dqn) + " " + str(mean_sap) + " " + str(mean_lb) + "\n")
-    # file.flush()
-    # file.close()
