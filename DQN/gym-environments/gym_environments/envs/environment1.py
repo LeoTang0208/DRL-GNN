@@ -131,9 +131,9 @@ def compute_link_betweenness(g, k):
         x = mu_bet + 0.0 * (g.get_edge_data(i, j)['betweenness'] - mu_bet) #!!!
         cap.append(float(len(g.edges()) * 200 * x / betw_sum))
         g.get_edge_data(i, j)["capacity"] = float(len(g.edges()) * 200 * x / betw_sum) # here
-        print(g.get_edge_data(i, j)["capacity"])
+        # print(g.get_edge_data(i, j)["capacity"])
     
-    print(">>>", np.std(cap))
+    # print(">>>", np.std(cap))
 
     return mu_bet, std_bet
 
@@ -277,6 +277,8 @@ class Env1(gym.Env):
         self.plr_feature = np.zeros(self.numEdges)
 
         position = 0
+        # print("?????", [edge[0] for edge in self.ordered_edges])
+        # print("?????", [edge[1] for edge in self.ordered_edges])
         for edge in self.ordered_edges:
             i = edge[0]
             j = edge[1]
@@ -306,6 +308,7 @@ class Env1(gym.Env):
         i = 0
         j = 1
         currentPath = self.allPaths[str(source) +':'+ str(destination)][action]
+        # print(currentPath)
         
         factor = 1.0 # Demand factor, determined by packet loss rate
 
@@ -317,8 +320,8 @@ class Env1(gym.Env):
             factor = factor * (1 - self.plr_feature[edge_now]) # factor
             if self.graph_state[edge_now][0] < 0:
                 # FINISH IF LINKS CAPACITY <0
-                return self.graph_state, (self.reward * factor), self.episode_over, self.demand, self.source, self.destination 
-                #      new_state,        reward,      done,              demand,      source,      destination
+                return self.graph_state, (self.reward * factor), self.episode_over, self.demand, self.source, self.destination, currentPath
+                #      new_state,        reward,      done,              demand,      source,      destination,     path
                 # Done=True --> not enough capacity
             i = i + 1
             j = j + 1
@@ -340,8 +343,8 @@ class Env1(gym.Env):
             if self.destination != self.source:
                 break
 
-        return self.graph_state, (self.reward * factor), self.episode_over, self.demand, self.source, self.destination
-        #      new_state,        reward,      done,              demand,      source,      destination
+        return self.graph_state, (self.reward * factor), self.episode_over, self.demand, self.source, self.destination, currentPath
+        #      new_state,        reward,      done,              demand,      source,      destination,     path
         # Done=False --> all enough capacity
 
     def reset(self):

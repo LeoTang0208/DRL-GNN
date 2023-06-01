@@ -455,7 +455,7 @@ if __name__ == "__main__":
             # demand, src, dst
             action, _ = agent.act(env_eval, state, demand, source, destination, True)
             
-            new_state, reward, done, demand, source, destination = env_eval.make_step(state, action, demand, source, destination)
+            new_state, reward, done, demand, source, destination, path_ = env_eval.make_step(state, action, demand, source, destination)
             rewardAddTest = rewardAddTest + reward
             state = new_state
             if done:
@@ -488,7 +488,7 @@ if __name__ == "__main__":
             while 1:
                 # We execute evaluation over current state
                 action, state_action = agent.act(env_training, state, demand, source, destination, False)
-                new_state, reward, done, new_demand, new_source, new_destination = env_training.make_step(state, action, demand, source, destination)
+                new_state, reward, done, new_demand, new_source, new_destination, path_ = env_training.make_step(state, action, demand, source, destination)
 
                 agent.add_sample(env_training, state_action, action, reward, done, new_state, new_demand, new_source, new_destination)
                 state = new_state
@@ -515,7 +515,7 @@ if __name__ == "__main__":
                     # We execute evaluation over current state
                     action, _ = agent.act(env_eval, state, demand, source, destination, True)
                     
-                    new_state, reward, done, demand, source, destination = env_eval.make_step(state, action, demand, source, destination)
+                    new_state, reward, done, demand, source, destination, path_ = env_eval.make_step(state, action, demand, source, destination)
                     rewardAddTest = rewardAddTest + reward
                     state = new_state
                     if done:
@@ -551,7 +551,7 @@ if __name__ == "__main__":
             # demand, src, dst
             action, _ = agent.act(env_eval, state, demand, source, destination, True)
             
-            new_state, reward, done, demand, source, destination = env_eval.make_step(state, action, demand, source, destination)
+            new_state, reward, done, demand, source, destination, path_ = env_eval.make_step(state, action, demand, source, destination)
             rewardAddTest = rewardAddTest + reward
             state = new_state
             if done:

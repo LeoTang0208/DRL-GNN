@@ -339,6 +339,11 @@ class DQNAgent:
         return inputs
 
 def exec_lb_model_episodes(experience_memory, graph_topology):
+    
+    nsf_s = [0, 0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 6, 7, 8, 8, 9, 9, 10, 10, 11]
+    nsf_t = [1, 2, 3, 2, 7, 5, 4, 8, 5, 6, 12, 13, 7, 10, 9, 11, 10, 12, 11, 13, 12]
+    nsf_w = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    
     env_lb = gym.make(ENV_NAME)
     env_lb.seed(SEED)
     env_lb.generate_environment(graph_topology, listofDemands, rand_size, rand_seed)
@@ -361,7 +366,15 @@ def exec_lb_model_episodes(experience_memory, graph_topology):
             state = env_lb.eval_sap_reset(demand, source, destination)
 
             action = agent.act(env_lb, state, demand, source, destination)
-            new_state, reward, done, _, _, _ = env_lb.make_step(state, action, demand, source, destination)
+            new_state, reward, done, _, _, _, currentpath = env_lb.make_step(state, action, demand, source, destination)
+            
+            for i in range(len(currentpath) - 1):
+                u = currentpath[i]
+                v = currentpath[i + 1]
+                for j in range(len(nsf_w)):
+                    if (((u == nsf_s[j]) and (v == nsf_t[j])) or ((u == nsf_t[j]) and (v == nsf_s[j]))):
+                        nsf_w[j] = nsf_w[j] + 1
+            
             env_lb.demand = demand
             env_lb.source = source
             env_lb.destination = destination
@@ -383,7 +396,15 @@ def exec_lb_model_episodes(experience_memory, graph_topology):
             source = experience_memory[iter_episode][2]
             destination = experience_memory[iter_episode][3]
             action = agent.act(env_lb, state, demand, source, destination)
-            new_state, reward, done, _, _, _ = env_lb.make_step(state, action, demand, source, destination)
+            new_state, reward, done, _, _, _, currentpath = env_lb.make_step(state, action, demand, source, destination)
+            
+            for i in range(len(currentpath) - 1):
+                u = currentpath[i]
+                v = currentpath[i + 1]
+                for j in range(len(nsf_w)):
+                    if (((u == nsf_s[j]) and (v == nsf_t[j])) or ((u == nsf_t[j]) and (v == nsf_s[j]))):
+                        nsf_w[j] = nsf_w[j] + 1
+            
             env_lb.demand = demand
             env_lb.source = source
             env_lb.destination = destination
@@ -402,9 +423,20 @@ def exec_lb_model_episodes(experience_memory, graph_topology):
             new_episode = True
             new_episode_it = new_episode_it + 1
             iter_episode = new_episode_it*NUM_SAMPLES_EPSD
+    
+    print(">>>>> lb")
+    # print(nsf_s)
+    # print(nsf_t)
+    print(nsf_w)
+    
     return rewards_lb
 
 def exec_sap_model_episodes(experience_memory, graph_topology):
+    
+    nsf_s = [0, 0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 6, 7, 8, 8, 9, 9, 10, 10, 11]
+    nsf_t = [1, 2, 3, 2, 7, 5, 4, 8, 5, 6, 12, 13, 7, 10, 9, 11, 10, 12, 11, 13, 12]
+    nsf_w = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    
     env_sap = gym.make(ENV_NAME)
     env_sap.seed(SEED)
     env_sap.generate_environment(graph_topology, listofDemands, rand_size, rand_seed)
@@ -427,7 +459,15 @@ def exec_sap_model_episodes(experience_memory, graph_topology):
             state = env_sap.eval_sap_reset(demand, source, destination)
 
             action = agent.act(env_sap, state, demand, source, destination)
-            new_state, reward, done, _, _, _ = env_sap.make_step(state, action, demand, source, destination)
+            new_state, reward, done, _, _, _, currentpath = env_sap.make_step(state, action, demand, source, destination)
+            
+            for i in range(len(currentpath) - 1):
+                u = currentpath[i]
+                v = currentpath[i + 1]
+                for j in range(len(nsf_w)):
+                    if (((u == nsf_s[j]) and (v == nsf_t[j])) or ((u == nsf_t[j]) and (v == nsf_s[j]))):
+                        nsf_w[j] = nsf_w[j] + 1
+            
             env_sap.demand = demand
             env_sap.source = source
             env_sap.destination = destination
@@ -449,7 +489,15 @@ def exec_sap_model_episodes(experience_memory, graph_topology):
             source = experience_memory[iter_episode][2]
             destination = experience_memory[iter_episode][3]
             action = agent.act(env_sap, state, demand, source, destination)
-            new_state, reward, done, _, _, _ = env_sap.make_step(state, action, demand, source, destination)
+            new_state, reward, done, _, _, _, currentpath = env_sap.make_step(state, action, demand, source, destination)
+            
+            for i in range(len(currentpath) - 1):
+                u = currentpath[i]
+                v = currentpath[i + 1]
+                for j in range(len(nsf_w)):
+                    if (((u == nsf_s[j]) and (v == nsf_t[j])) or ((u == nsf_t[j]) and (v == nsf_s[j]))):
+                        nsf_w[j] = nsf_w[j] + 1
+            
             env_sap.demand = demand
             env_sap.source = source
             env_sap.destination = destination
@@ -468,9 +516,20 @@ def exec_sap_model_episodes(experience_memory, graph_topology):
             new_episode = True
             new_episode_it = new_episode_it + 1
             iter_episode = new_episode_it * NUM_SAMPLES_EPSD
+    
+    print(">>>>> sap")
+    # print(nsf_s)
+    # print(nsf_t)
+    print(nsf_w)
+    
     return rewards_sap
 
 def exec_dqn_model_episodes(experience_memory, env_dqn, agent):
+    
+    nsf_s = [0, 0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 6, 7, 8, 8, 9, 9, 10, 10, 11]
+    nsf_t = [1, 2, 3, 2, 7, 5, 4, 8, 5, 6, 12, 13, 7, 10, 9, 11, 10, 12, 11, 13, 12]
+    nsf_w = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    
     rewards_dqn = np.zeros(NUMBER_EPISODES)
 
     rewardAdd = 0
@@ -488,7 +547,15 @@ def exec_dqn_model_episodes(experience_memory, env_dqn, agent):
             state = env_dqn.eval_sap_reset(demand, source, destination)
 
             action, state_action = agent.act(env_dqn, state, demand, source, destination, True)
-            new_state, reward, done, new_demand, new_source, new_destination = env_dqn.make_step(state, action, demand, source, destination)
+            new_state, reward, done, new_demand, new_source, new_destination, currentpath = env_dqn.make_step(state, action, demand, source, destination)
+            
+            for i in range(len(currentpath) - 1):
+                u = currentpath[i]
+                v = currentpath[i + 1]
+                for j in range(len(nsf_w)):
+                    if (((u == nsf_s[j]) and (v == nsf_t[j])) or ((u == nsf_t[j]) and (v == nsf_s[j]))):
+                        nsf_w[j] = nsf_w[j] + 1
+            
             rewardAdd = rewardAdd + reward
             state = new_state
             if done:
@@ -506,7 +573,15 @@ def exec_dqn_model_episodes(experience_memory, env_dqn, agent):
             destination = experience_memory[iter_episode][3]
 
             action, state_action = agent.act(env_dqn, state, demand, source, destination, True)
-            new_state, reward, done, new_demand, new_source, new_destination = env_dqn.make_step(state, action, demand, source, destination)
+            new_state, reward, done, new_demand, new_source, new_destination, currentpath = env_dqn.make_step(state, action, demand, source, destination)
+            
+            for i in range(len(currentpath) - 1):
+                u = currentpath[i]
+                v = currentpath[i + 1]
+                for j in range(len(nsf_w)):
+                    if (((u == nsf_s[j]) and (v == nsf_t[j])) or ((u == nsf_t[j]) and (v == nsf_s[j]))):
+                        nsf_w[j] = nsf_w[j] + 1
+            
             rewardAdd = rewardAdd + reward
             state = new_state
             if done:
@@ -522,6 +597,12 @@ def exec_dqn_model_episodes(experience_memory, env_dqn, agent):
             if new_episode_it%5==0:
                 print("DQN Episode >>> ", new_episode_it)
             iter_episode = new_episode_it * NUM_SAMPLES_EPSD
+    
+    print(">>>>> dqn")
+    # print(nsf_s)
+    # print(nsf_t)
+    print(nsf_w)
+    
     return rewards_dqn
 
 if __name__ == "__main__":
