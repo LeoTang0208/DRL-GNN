@@ -32,7 +32,7 @@ NUMBER_EPISODES = 50
 NUM_SAMPLES_EPSD = 100
 
 # Set evaluation topology
-graph_topology = 1 # 0==NSFNET, 1==GEANT2, 2==Small Topology, 3==GBN
+graph_topology = 0 # 0==NSFNET, 1==GEANT2, 2==Small Topology, 3==GBN
 # NEW! 4 == Random Graph
 
 listofDemands = [8, 32, 64]
@@ -292,20 +292,49 @@ class DQNAgent:
             'betweenness': tf.convert_to_tensor(value=env.between_feature, dtype=tf.float32),
             'bw_allocated': tf.convert_to_tensor(value=self.bw_demand_feature, dtype=tf.float32),
             'capacities': tf.convert_to_tensor(value=self.capacity_feature, dtype=tf.float32),
+            'plr': tf.convert_to_tensor(value=env.plr_feature, dtype=tf.float32),
             'first': tf.convert_to_tensor(env.first, dtype=tf.int32),
             'second': tf.convert_to_tensor(env.second, dtype=tf.int32)
         }
 
         sample['capacities'] = tf.reshape(sample['capacities'][0:sample['num_edges']], [sample['num_edges'], 1])
         sample['betweenness'] = tf.reshape(sample['betweenness'][0:sample['num_edges']], [sample['num_edges'], 1])
+        sample['plr'] = tf.reshape(sample['plr'][0:sample['num_edges']], [sample['num_edges'], 1])
+        
+        hiddenStates_ = tf.concat([sample['capacities'], sample['betweenness'], sample['bw_allocated']], axis=1)
+        # print(">>>>>", tf.shape(hiddenStates_))
 
-        hiddenStates = tf.concat([sample['capacities'], sample['betweenness'], sample['bw_allocated']], axis=1)
+        hiddenStates = tf.concat([sample['capacities'], sample['betweenness'], sample['bw_allocated'], sample['plr']], axis=1) # NEW!
+        # print("!!!!!", tf.shape(hiddenStates))
 
-        paddings = tf.constant([[0, 0], [0, hparams['link_state_dim'] - 2 - hparams['num_demands']]])
+        paddings = tf.constant([[0, 0], [0, hparams['link_state_dim'] - 3 - hparams['num_demands']]]) # PROBLEM? The params dont match, dont change now
         link_state = tf.pad(tensor=hiddenStates, paddings=paddings, mode="CONSTANT")
+        # print("?????", tf.shape(link_state))
 
         inputs = {'link_state': link_state, 'first': sample['first'][0:sample['length']],
                   'second': sample['second'][0:sample['length']], 'num_edges': sample['num_edges']}
+        
+        """
+        1.  link_state: 21*20 tensor, 21 --> num_edges, 
+            20 --> capacity range [-0.5, 0.5], 
+            betweenness range [-0.5, 0.5], 
+            hidden_states [0/1, 0/1, 0/1] for [64, 32, 8], 
+            15 for padding filled with 0
+            
+        2.  first, second: All adjacent links based on links in the graph
+            >> 0 1      link no. 0
+            >>>> 0 2    link no. 1
+            >>>> 0 3    link no. 2
+            >>>> 1 2    link no. 3
+            >>>> 1 7    link no. 4
+            
+            translates to first, second:
+            
+            [0, 0, 0, 0]
+            [1, 2, 3, 4]
+            
+        3. num_edges: num of edges in graph
+        """
 
         return inputs
 
@@ -617,10 +646,10 @@ if __name__ == "__main__":
     plt.savefig("./Images/ModelEval" + topo + "_" + str(hparams['T']) + ".png", bbox_extra_artists=(lgd,), bbox_inches='tight') #original: pdf
     #plt.show()
     
-    file = open("./results_GEANT2_diff_capa.txt", "a")
+    file = open("./result_logs/results_NSFnet_plr.txt", "a")
     # for i in range(NUMBER_EPISODES):
     #     file.write(str(0.0) + " " + str(hparams['T']) + " "+ str(rewards_dqn[i]) + " " + str(rewards_sap[i]) + " " + str(rewards_lb[i]) + "\n")
     #     file.flush()
-    file.write(str(1.5) + " " + str(hparams['T']) + " " + str(mean_dqn) + " " + str(mean_sap) + " " + str(mean_lb) + "\n")
-    file.flush()
+    # file.write(str(0.0) + " " + str(hparams['T']) + " " + str(mean_dqn) + " " + str(mean_sap) + " " + str(mean_lb) + "\n")
+    # file.flush()
     file.close()

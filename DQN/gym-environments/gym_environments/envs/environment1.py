@@ -99,6 +99,7 @@ def generate_nx_graph(topology, size, seed):
         G.get_edge_data(i, j)['numsp'] = 0  # Indicates the number of shortest paths going through the link
         # We set the edges capacities to 200
         G.get_edge_data(i, j)["capacity"] = float(200)
+        G.get_edge_data(i, j)['plr'] = 0.1 * random.random() # NEW! Attribute a package loss rate to each link
         G.get_edge_data(i, j)['bw_allocated'] = 0
         incId = incId + 1
 
@@ -127,7 +128,7 @@ def compute_link_betweenness(g, k):
     cap = []
 
     for i, j in g.edges():
-        x = mu_bet + 1.5 * (g.get_edge_data(i, j)['betweenness'] - mu_bet) #!!!
+        x = mu_bet + 0.0 * (g.get_edge_data(i, j)['betweenness'] - mu_bet) #!!!
         cap.append(float(len(g.edges()) * 200 * x / betw_sum))
         g.get_edge_data(i, j)["capacity"] = float(len(g.edges()) * 200 * x / betw_sum) # here
         print(g.get_edge_data(i, j)["capacity"])
@@ -249,7 +250,7 @@ class Env1(gym.Env):
         # print(self.second)
 
 
-    def generate_environment(self, topology, listofdemands, size, seed):
+    def generate_environment(self, topology, listofdemands, size, seed): # TODO! Add packet loss rate
         # The nx graph will only be used to convert graph from edges to nodes
         self.graph = generate_nx_graph(topology, size, seed)
 
@@ -273,6 +274,7 @@ class Env1(gym.Env):
 
         self.graph_state = np.zeros((self.numEdges, 2))
         self.between_feature = np.zeros(self.numEdges)
+        self.plr_feature = np.zeros(self.numEdges)
 
         position = 0
         for edge in self.ordered_edges:
@@ -284,6 +286,7 @@ class Env1(gym.Env):
             self.graph.get_edge_data(i, j)['betweenness'] = betweenness
             self.graph_state[position][0] = self.graph.get_edge_data(i, j)["capacity"]
             self.between_feature[position] = self.graph.get_edge_data(i, j)['betweenness']
+            self.plr_feature[position] = self.graph.get_edge_data(i, j)['plr']
             position = position + 1
 
         self.initial_state = np.copy(self.graph_state)
@@ -303,14 +306,18 @@ class Env1(gym.Env):
         i = 0
         j = 1
         currentPath = self.allPaths[str(source) +':'+ str(destination)][action]
+        
+        factor = 1.0 # Demand factor, determined by packet loss rate
 
         # Once we pick the action, we decrease the total edge capacity from the edges
         # from the allocated path (action path)
         while (j < len(currentPath)):
-            self.graph_state[self.edgesDict[str(currentPath[i]) + ':' + str(currentPath[j])]][0] -= demand
-            if self.graph_state[self.edgesDict[str(currentPath[i]) + ':' + str(currentPath[j])]][0] < 0:
+            edge_now = self.edgesDict[str(currentPath[i]) + ':' + str(currentPath[j])]
+            self.graph_state[edge_now][0] -= demand
+            factor = factor * (1 - self.plr_feature[edge_now]) # factor
+            if self.graph_state[edge_now][0] < 0:
                 # FINISH IF LINKS CAPACITY <0
-                return self.graph_state, self.reward, self.episode_over, self.demand, self.source, self.destination 
+                return self.graph_state, (self.reward * factor), self.episode_over, self.demand, self.source, self.destination 
                 #      new_state,        reward,      done,              demand,      source,      destination
                 # Done=True --> not enough capacity
             i = i + 1
@@ -333,7 +340,7 @@ class Env1(gym.Env):
             if self.destination != self.source:
                 break
 
-        return self.graph_state, self.reward, self.episode_over, self.demand, self.source, self.destination
+        return self.graph_state, (self.reward * factor), self.episode_over, self.demand, self.source, self.destination
         #      new_state,        reward,      done,              demand,      source,      destination
         # Done=False --> all enough capacity
 

@@ -32,7 +32,7 @@ FIRST_WORK_TRAIN_EPISODE = 60
 MULTI_FACTOR_BATCH = 6 # Number of batches used in training
 TAU = 0.08 # Only used in soft weights copy
 
-differentiation_str = "sample_DQN_agent_orig"
+differentiation_str = "sample_DQN_agent_plr"
 checkpoint_dir = "./models" + differentiation_str
 store_loss = 3 # Store the loss every store_loss batches
 
@@ -239,17 +239,24 @@ class DQNAgent:
             'betweenness': tf.convert_to_tensor(value=env.between_feature, dtype=tf.float32),
             'bw_allocated': tf.convert_to_tensor(value=self.bw_allocated_feature, dtype=tf.float32),
             'capacities': tf.convert_to_tensor(value=self.capacity_feature, dtype=tf.float32),
+            'plr': tf.convert_to_tensor(value=env.plr_feature, dtype=tf.float32),
             'first': tf.convert_to_tensor(env.first, dtype=tf.int32),
             'second': tf.convert_to_tensor(env.second, dtype=tf.int32)
         }
 
         sample['capacities'] = tf.reshape(sample['capacities'][0:sample['num_edges']], [sample['num_edges'], 1])
         sample['betweenness'] = tf.reshape(sample['betweenness'][0:sample['num_edges']], [sample['num_edges'], 1])
+        sample['plr'] = tf.reshape(sample['plr'][0:sample['num_edges']], [sample['num_edges'], 1])
+        
+        hiddenStates_ = tf.concat([sample['capacities'], sample['betweenness'], sample['bw_allocated']], axis=1)
+        # print(">>>>>", tf.shape(hiddenStates_))
 
-        hiddenStates = tf.concat([sample['capacities'], sample['betweenness'], sample['bw_allocated']], axis=1)
+        hiddenStates = tf.concat([sample['capacities'], sample['betweenness'], sample['bw_allocated'], sample['plr']], axis=1) # NEW!
+        # print("!!!!!", tf.shape(hiddenStates))
 
-        paddings = tf.constant([[0, 0], [0, hparams['link_state_dim'] - 2 - hparams['num_demands']]])
+        paddings = tf.constant([[0, 0], [0, hparams['link_state_dim'] - 3 - hparams['num_demands']]]) # PROBLEM? The params dont match, dont change now
         link_state = tf.pad(tensor=hiddenStates, paddings=paddings, mode="CONSTANT")
+        # print("?????", tf.shape(link_state))
 
         inputs = {'link_state': link_state, 'first': sample['first'][0:sample['length']],
                   'second': sample['second'][0:sample['length']], 'num_edges': sample['num_edges']}
