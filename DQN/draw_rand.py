@@ -75,7 +75,3 @@ plt.grid()
 plt.legend(loc="upper right")
 
 plt.show()
-
-#NETWORK DESIGN PROBLEM: where to allocate bdwdth
-#Gods eye view
-#REPRODUCE the box plot

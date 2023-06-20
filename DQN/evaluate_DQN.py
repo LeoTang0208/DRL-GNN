@@ -728,9 +728,9 @@ if __name__ == "__main__":
     #plt.show()
     
     file = open("./result_logs/results_NSFnet_plr.txt", "a")
-    # for i in range(NUMBER_EPISODES):
-    #     file.write(str(0.0) + " " + str(hparams['T']) + " "+ str(rewards_dqn[i]) + " " + str(rewards_sap[i]) + " " + str(rewards_lb[i]) + "\n")
-    #     file.flush()
+    for i in range(NUMBER_EPISODES):
+        file.write(str(0.0) + " " + str(hparams['T']) + " "+ str(rewards_dqn[i]) + " " + str(rewards_sap[i]) + " " + str(rewards_lb[i]) + "\n")
+        file.flush()
     # file.write(str(0.0) + " " + str(hparams['T']) + " " + str(mean_dqn) + " " + str(mean_sap) + " " + str(mean_lb) + "\n")
-    # file.flush()
+    file.flush()
     file.close()

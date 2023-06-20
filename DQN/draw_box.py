@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import os
 
-f = open("./result_logs/results_GEANT2_plr.txt", "r") #_orig_diff_capa
+f = open("./result_logs/results_NSFnet_plr.txt", "r") #_orig_diff_capa
 
 drl = []
 sap = []
@@ -19,12 +19,12 @@ f.close()
 print(sum(drl) / len(drl), sum(sap) / len(sap))
 
 plt.boxplot([drl, sap, lb], labels=['DRL+GNN', 'SAP', 'LB'])
-plt.ylim([100, 1400])
+plt.ylim([100, 1500])
 plt.gca().yaxis.grid(True)
 
 # plt.xlabel('Standard Deviation (\u03C3)', fontsize=12)
 plt.ylabel('Bandwidth Allocated', fontsize=12)
     
-plt.title('Tested on GEANT2', fontsize=12)
+plt.title('Tested on NSFnet', fontsize=12)
 
 plt.show()

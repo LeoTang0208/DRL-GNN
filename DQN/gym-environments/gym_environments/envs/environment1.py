@@ -320,7 +320,7 @@ class Env1(gym.Env):
             factor = factor * (1 - self.plr_feature[edge_now]) # factor
             if self.graph_state[edge_now][0] < 0:
                 # FINISH IF LINKS CAPACITY <0
-                return self.graph_state, (self.reward * factor), self.episode_over, self.demand, self.source, self.destination, currentPath
+                return self.graph_state, self.reward, self.episode_over, self.demand, self.source, self.destination, currentPath
                 #      new_state,        reward,      done,              demand,      source,      destination,     path
                 # Done=True --> not enough capacity
             i = i + 1
@@ -343,7 +343,11 @@ class Env1(gym.Env):
             if self.destination != self.source:
                 break
 
-        return self.graph_state, (self.reward * factor), self.episode_over, self.demand, self.source, self.destination, currentPath
+        p = random.random()
+        if (p > factor):
+            self.reward = 0.0
+
+        return self.graph_state, self.reward, self.episode_over, self.demand, self.source, self.destination, currentPath
         #      new_state,        reward,      done,              demand,      source,      destination,     path
         # Done=False --> all enough capacity
 
