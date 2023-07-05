@@ -13,6 +13,7 @@ from collections import deque
 import multiprocessing
 import time as tt
 import glob
+import argparse
 
 # os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
@@ -20,8 +21,9 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 ENV_NAME = 'GraphEnv-v1'
 graph_topology = 0 # 0==NSFNET, 1==GEANT2, 2==Small Topology, 3==GBN
 # New!
-rand_size = 0
-rand_seed = 0
+# rand_size = 0
+# rand_seed = 0
+# plr_cap = 0
 
 SEED = 37
 ITERATIONS = 10000 #! Original: 10000
@@ -413,15 +415,27 @@ class DQNAgent:
 if __name__ == "__main__":
     # python train_DQN.py
     # Get the environment and extract the number of actions.
+    
+    parser = argparse.ArgumentParser(description='Parse file and create plots')
+
+    parser.add_argument('-s', type=int, required=True)
+    parser.add_argument('-e', type=int, required=True)
+    parser.add_argument('-p', type=float, required=True)
+    args = parser.parse_args()
+
+    rand_size = args.s
+    rand_seed = args.e
+    plr_cap = args.p
+
     env_training = gym.make(ENV_NAME)
     np.random.seed() #SEED = 37 used
     env_training.seed()
-    env_training.generate_environment(graph_topology, listofDemands, rand_size, rand_seed)
+    env_training.generate_environment(graph_topology, listofDemands, rand_size, rand_seed, plr_cap)
 
     env_eval = gym.make(ENV_NAME)
     np.random.seed() #SEED = 37 used
     env_eval.seed()
-    env_eval.generate_environment(graph_topology, listofDemands, rand_size, rand_seed)
+    env_eval.generate_environment(graph_topology, listofDemands, rand_size, rand_seed, plr_cap)
 
     batch_size = hparams['batch_size']
     agent = DQNAgent(batch_size)

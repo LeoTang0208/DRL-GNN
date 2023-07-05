@@ -71,7 +71,7 @@ def create_random_graph(size, seed):
     
     return Gbase
 
-def generate_nx_graph(topology, size, seed):
+def generate_nx_graph(topology, size, seed, plr_cap):
     """
     Generate graphs for training with the same topology.
     """
@@ -99,7 +99,8 @@ def generate_nx_graph(topology, size, seed):
         G.get_edge_data(i, j)['numsp'] = 0  # Indicates the number of shortest paths going through the link
         # We set the edges capacities to 200
         G.get_edge_data(i, j)["capacity"] = float(200)
-        G.get_edge_data(i, j)['plr'] = 0.1 * random.random() # NEW! Attribute a package loss rate to each link
+        G.get_edge_data(i, j)['plr'] = plr_cap * random.random() # NEW! Attribute a package loss rate to each link
+        print(i, j, G.get_edge_data(i, j)['plr'])
         G.get_edge_data(i, j)['bw_allocated'] = 0
         incId = incId + 1
 
@@ -250,9 +251,9 @@ class Env1(gym.Env):
         # print(self.second)
 
 
-    def generate_environment(self, topology, listofdemands, size, seed): # TODO! Add packet loss rate
+    def generate_environment(self, topology, listofdemands, size, seed, plr_cap): # TODO! Add packet loss rate
         # The nx graph will only be used to convert graph from edges to nodes
-        self.graph = generate_nx_graph(topology, size, seed)
+        self.graph = generate_nx_graph(topology, size, seed, plr_cap)
 
         self.listofDemands = listofdemands
 
