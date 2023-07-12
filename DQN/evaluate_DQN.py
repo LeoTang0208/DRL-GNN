@@ -35,6 +35,9 @@ NUM_SAMPLES_EPSD = 100
 graph_topology = 0 # 0==NSFNET, 1==GEANT2, 2==Small Topology, 3==GBN
 # NEW! 4 == Random Graph
 
+nsf_s = [0, 0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 6, 7, 8, 8, 9, 9, 10, 10, 11]
+nsf_t = [1, 2, 3, 2, 7, 5, 4, 8, 5, 6, 12, 13, 7, 10, 9, 11, 10, 12, 11, 13, 12]
+
 listofDemands = [8, 32, 64]
 
 hparams = {
@@ -339,10 +342,7 @@ class DQNAgent:
         return inputs
 
 def exec_lb_model_episodes(experience_memory, graph_topology):
-    
-    nsf_s = [0, 0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 6, 7, 8, 8, 9, 9, 10, 10, 11]
-    nsf_t = [1, 2, 3, 2, 7, 5, 4, 8, 5, 6, 12, 13, 7, 10, 9, 11, 10, 12, 11, 13, 12]
-    nsf_w = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    nsf_w = [0 for i in range(len(nsf_s))]
     
     env_lb = gym.make(ENV_NAME)
     env_lb.seed(SEED)
@@ -350,8 +350,10 @@ def exec_lb_model_episodes(experience_memory, graph_topology):
 
     agent = LBAgent()
     rewards_lb = np.zeros(NUMBER_EPISODES)
+    demands_lb = np.zeros(NUMBER_EPISODES)
 
     rewardAdd = 0
+    demandAdd = 0
     reward_it = 0
     iter_episode = 0 # Iterates over samples within the same episode
     new_episode = True
@@ -366,7 +368,7 @@ def exec_lb_model_episodes(experience_memory, graph_topology):
             state = env_lb.eval_sap_reset(demand, source, destination)
 
             action = agent.act(env_lb, state, demand, source, destination)
-            new_state, reward, done, _, _, _, currentpath = env_lb.make_step(state, action, demand, source, destination)
+            new_state, reward, done, _, _, _, currentpath, _ = env_lb.make_step(state, action, demand, source, destination)
             
             for i in range(len(currentpath) - 1):
                 u = currentpath[i]
@@ -379,10 +381,13 @@ def exec_lb_model_episodes(experience_memory, graph_topology):
             env_lb.source = source
             env_lb.destination = destination
             rewardAdd = rewardAdd + reward
+            if (not done):
+                demandAdd = demandAdd + demand
             state = new_state
 
             if done:
                 rewards_lb[reward_it] = rewardAdd
+                demands_lb[reward_it] = demandAdd
                 reward_it = reward_it + 1
                 wait_for_new_episode = True
 
@@ -396,7 +401,7 @@ def exec_lb_model_episodes(experience_memory, graph_topology):
             source = experience_memory[iter_episode][2]
             destination = experience_memory[iter_episode][3]
             action = agent.act(env_lb, state, demand, source, destination)
-            new_state, reward, done, _, _, _, currentpath = env_lb.make_step(state, action, demand, source, destination)
+            new_state, reward, done, _, _, _, currentpath, _ = env_lb.make_step(state, action, demand, source, destination)
             
             for i in range(len(currentpath) - 1):
                 u = currentpath[i]
@@ -409,33 +414,29 @@ def exec_lb_model_episodes(experience_memory, graph_topology):
             env_lb.source = source
             env_lb.destination = destination
             rewardAdd = rewardAdd + reward
+            if (not done):
+                demandAdd = demandAdd + demand
             state = new_state
 
             if done:
                 rewards_lb[reward_it] = rewardAdd
+                demands_lb[reward_it] = demandAdd
                 reward_it = reward_it + 1
                 wait_for_new_episode = True
 
             iter_episode = iter_episode + 1
         if wait_for_new_episode:
             rewardAdd = 0
+            demandAdd = 0
             wait_for_new_episode = False
             new_episode = True
             new_episode_it = new_episode_it + 1
             iter_episode = new_episode_it*NUM_SAMPLES_EPSD
     
-    print(">>>>> lb")
-    # print(nsf_s)
-    # print(nsf_t)
-    print(nsf_w)
-    
-    return rewards_lb
+    return rewards_lb, nsf_w, demands_lb
 
 def exec_sap_model_episodes(experience_memory, graph_topology):
-    
-    nsf_s = [0, 0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 6, 7, 8, 8, 9, 9, 10, 10, 11]
-    nsf_t = [1, 2, 3, 2, 7, 5, 4, 8, 5, 6, 12, 13, 7, 10, 9, 11, 10, 12, 11, 13, 12]
-    nsf_w = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    nsf_w = [0 for i in range(len(nsf_s))]
     
     env_sap = gym.make(ENV_NAME)
     env_sap.seed(SEED)
@@ -443,8 +444,10 @@ def exec_sap_model_episodes(experience_memory, graph_topology):
 
     agent = SAPAgent()
     rewards_sap = np.zeros(NUMBER_EPISODES)
+    demands_sap = np.zeros(NUMBER_EPISODES)
 
     rewardAdd = 0
+    demandAdd = 0
     reward_it = 0
     iter_episode = 0  # Iterates over samples within the same episode
     new_episode = True
@@ -459,7 +462,7 @@ def exec_sap_model_episodes(experience_memory, graph_topology):
             state = env_sap.eval_sap_reset(demand, source, destination)
 
             action = agent.act(env_sap, state, demand, source, destination)
-            new_state, reward, done, _, _, _, currentpath = env_sap.make_step(state, action, demand, source, destination)
+            new_state, reward, done, _, _, _, currentpath, _ = env_sap.make_step(state, action, demand, source, destination)
             
             for i in range(len(currentpath) - 1):
                 u = currentpath[i]
@@ -472,10 +475,13 @@ def exec_sap_model_episodes(experience_memory, graph_topology):
             env_sap.source = source
             env_sap.destination = destination
             rewardAdd = rewardAdd + reward
+            if (not done):
+                demandAdd = demandAdd + demand
             state = new_state
 
             if done:
                 rewards_sap[reward_it] = rewardAdd
+                demands_sap[reward_it] = demandAdd
                 reward_it = reward_it + 1
                 wait_for_new_episode = True
 
@@ -489,7 +495,7 @@ def exec_sap_model_episodes(experience_memory, graph_topology):
             source = experience_memory[iter_episode][2]
             destination = experience_memory[iter_episode][3]
             action = agent.act(env_sap, state, demand, source, destination)
-            new_state, reward, done, _, _, _, currentpath = env_sap.make_step(state, action, demand, source, destination)
+            new_state, reward, done, _, _, _, currentpath, _ = env_sap.make_step(state, action, demand, source, destination)
             
             for i in range(len(currentpath) - 1):
                 u = currentpath[i]
@@ -502,37 +508,35 @@ def exec_sap_model_episodes(experience_memory, graph_topology):
             env_sap.source = source
             env_sap.destination = destination
             rewardAdd = rewardAdd + reward
+            if (not done):
+                demandAdd = demandAdd + demand
             state = new_state
 
             if done:
                 rewards_sap[reward_it] = rewardAdd
+                demands_sap[reward_it] = demandAdd
                 reward_it = reward_it + 1
                 wait_for_new_episode = True
 
             iter_episode = iter_episode + 1
         if wait_for_new_episode:
             rewardAdd = 0
+            demandAdd = 0
             wait_for_new_episode = False
             new_episode = True
             new_episode_it = new_episode_it + 1
             iter_episode = new_episode_it * NUM_SAMPLES_EPSD
     
-    print(">>>>> sap")
-    # print(nsf_s)
-    # print(nsf_t)
-    print(nsf_w)
-    
-    return rewards_sap
+    return rewards_sap, nsf_w, demands_sap
 
 def exec_dqn_model_episodes(experience_memory, env_dqn, agent):
-    
-    nsf_s = [0, 0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 6, 7, 8, 8, 9, 9, 10, 10, 11]
-    nsf_t = [1, 2, 3, 2, 7, 5, 4, 8, 5, 6, 12, 13, 7, 10, 9, 11, 10, 12, 11, 13, 12]
-    nsf_w = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    nsf_w = [0 for i in range(len(nsf_s))]
     
     rewards_dqn = np.zeros(NUMBER_EPISODES)
+    demands_dqn = np.zeros(NUMBER_EPISODES)
 
     rewardAdd = 0
+    demandAdd = 0
     reward_it = 0
     iter_episode = 0  # Iterates over samples within the same episode
     new_episode = True
@@ -547,7 +551,7 @@ def exec_dqn_model_episodes(experience_memory, env_dqn, agent):
             state = env_dqn.eval_sap_reset(demand, source, destination)
 
             action, state_action = agent.act(env_dqn, state, demand, source, destination, True)
-            new_state, reward, done, new_demand, new_source, new_destination, currentpath = env_dqn.make_step(state, action, demand, source, destination)
+            new_state, reward, done, new_demand, new_source, new_destination, currentpath, _ = env_dqn.make_step(state, action, demand, source, destination)
             
             for i in range(len(currentpath) - 1):
                 u = currentpath[i]
@@ -557,9 +561,12 @@ def exec_dqn_model_episodes(experience_memory, env_dqn, agent):
                         nsf_w[j] = nsf_w[j] + 1
             
             rewardAdd = rewardAdd + reward
+            if (not done):
+                demandAdd = demandAdd + demand
             state = new_state
             if done:
                 rewards_dqn[reward_it] = rewardAdd
+                demands_dqn[reward_it] = demandAdd
                 reward_it = reward_it + 1
                 wait_for_new_episode = True
             iter_episode = iter_episode + 1
@@ -573,7 +580,7 @@ def exec_dqn_model_episodes(experience_memory, env_dqn, agent):
             destination = experience_memory[iter_episode][3]
 
             action, state_action = agent.act(env_dqn, state, demand, source, destination, True)
-            new_state, reward, done, new_demand, new_source, new_destination, currentpath = env_dqn.make_step(state, action, demand, source, destination)
+            new_state, reward, done, new_demand, new_source, new_destination, currentpath, _ = env_dqn.make_step(state, action, demand, source, destination)
             
             for i in range(len(currentpath) - 1):
                 u = currentpath[i]
@@ -583,14 +590,18 @@ def exec_dqn_model_episodes(experience_memory, env_dqn, agent):
                         nsf_w[j] = nsf_w[j] + 1
             
             rewardAdd = rewardAdd + reward
+            if (not done):
+                demandAdd = demandAdd + demand
             state = new_state
             if done:
                 rewards_dqn[reward_it] = rewardAdd
+                demands_dqn[reward_it] = demandAdd
                 reward_it = reward_it + 1
                 wait_for_new_episode = True
             iter_episode = iter_episode + 1
         if wait_for_new_episode:
             rewardAdd = 0
+            demandAdd = 0
             wait_for_new_episode = False
             new_episode = True
             new_episode_it = new_episode_it + 1
@@ -598,12 +609,7 @@ def exec_dqn_model_episodes(experience_memory, env_dqn, agent):
                 print("DQN Episode >>> ", new_episode_it)
             iter_episode = new_episode_it * NUM_SAMPLES_EPSD
     
-    print(">>>>> dqn")
-    # print(nsf_s)
-    # print(nsf_t)
-    print(nsf_w)
-    
-    return rewards_dqn
+    return rewards_dqn, nsf_w, demands_dqn
 
 if __name__ == "__main__":
     # python evaluate_DQN.py -d ./Logs/expsample_DQN_agentLogs.txt
@@ -691,48 +697,33 @@ if __name__ == "__main__":
 
     # store_experiences.close()
 
-    rewards_lb = exec_lb_model_episodes(experience_memory, graph_topology)
-    rewards_sap = exec_sap_model_episodes(experience_memory, graph_topology)
-    rewards_dqn = exec_dqn_model_episodes(experience_memory, env_dqn, dqn_agent)
-
-    #rewards_lb.tofile('rewards_lb'+topo+'1K.dat')
-    #rewards_dqn.tofile('rewards_dqn'+topo+'1K.dat')
-
-    plt.rcParams.update({'font.size': 12})
-    plt.plot(rewards_dqn, 'r', label="DQN")
-    plt.plot(rewards_sap, 'b', label="SAP")
-    plt.plot(rewards_lb, 'g', label="LB")
+    rewards_lb, _, demands_lb = exec_lb_model_episodes(experience_memory, graph_topology)
+    rewards_sap, _, demands_sap = exec_sap_model_episodes(experience_memory, graph_topology)
+    rewards_dqn, _, demands_dqn = exec_dqn_model_episodes(experience_memory, env_dqn, dqn_agent)
 
     #DQN
     mean_dqn = np.mean(rewards_dqn) 
-    print(mean_dqn, len(rewards_dqn))
+    fac_dqn = np.mean([(rewards_dqn[i] * np.max(listofDemands) / demands_dqn[i]) for i in range(len(rewards_dqn))])
+    print(mean_dqn)
     means_dqn.fill(mean_dqn)
-    plt.plot(means_dqn, 'r', linestyle="-.")
 
     #SAP
     mean_sap = np.mean(rewards_sap) 
-    print(mean_sap, len(rewards_sap))
+    fac_sap = np.mean([(rewards_sap[i] * np.max(listofDemands) / demands_sap[i]) for i in range(len(rewards_sap))])
+    print(mean_sap)
     means_sap.fill(mean_sap)
-    plt.plot(means_sap, 'b', linestyle=":")
 
     #LB
     mean_lb = np.mean(rewards_lb) 
-    print(mean_lb, len(rewards_lb))
+    fac_lb = np.mean([(rewards_lb[i] * np.max(listofDemands) / demands_lb[i]) for i in range(len(rewards_lb))])
+    print(mean_lb)
     means_lb.fill(mean_lb)
-    plt.plot(means_lb, 'g', linestyle="--")
-
-    plt.xlabel("Episodes", fontsize=14, fontweight='bold')
-    plt.ylabel("Score", fontsize=14, fontweight='bold')
-    lgd = plt.legend(loc="lower left", bbox_to_anchor=(0.1, -0.24),
-            ncol=4, fancybox=True, shadow=True)
     
-    plt.savefig("./Images/ModelEval" + topo + "_" + str(hparams['T']) + ".png", bbox_extra_artists=(lgd,), bbox_inches='tight') #original: pdf
-    #plt.show()
-    
-    # file = open("./result_logs/results_GEANT2_plr.txt", "a")
+    file = open("./result_logs/results_plr.txt", "a")
     # for i in range(NUMBER_EPISODES):
     #     file.write(str(0.0) + " " + str(hparams['T']) + " "+ str(rewards_dqn[i]) + " " + str(rewards_sap[i]) + " " + str(rewards_lb[i]) + "\n")
     #     file.flush()
-    # file.write(str(0.0) + " " + str(hparams['T']) + " " + str(mean_dqn) + " " + str(mean_sap) + " " + str(mean_lb) + "\n")
-    # file.flush()
-    # file.close()
+    file.write("0 " + str(np.round(plr_cap, 2)) + " " + str(mean_dqn) + " " + str(mean_sap) + " " + str(mean_lb) + "\n")
+    file.write("1 " + str(np.round(plr_cap, 2)) + " " + str(fac_dqn) + " " + str(fac_sap) + " " + str(fac_lb) + "\n")
+    file.flush()
+    file.close()

@@ -100,7 +100,7 @@ def generate_nx_graph(topology, size, seed, plr_cap):
         # We set the edges capacities to 200
         G.get_edge_data(i, j)["capacity"] = float(200)
         G.get_edge_data(i, j)['plr'] = plr_cap * random.random() # NEW! Attribute a package loss rate to each link
-        print(i, j, G.get_edge_data(i, j)['plr'])
+        # print(i, j, G.get_edge_data(i, j)['plr'])
         G.get_edge_data(i, j)['bw_allocated'] = 0
         incId = incId + 1
 
@@ -319,10 +319,11 @@ class Env1(gym.Env):
             edge_now = self.edgesDict[str(currentPath[i]) + ':' + str(currentPath[j])]
             self.graph_state[edge_now][0] -= demand
             factor = factor * (1 - self.plr_feature[edge_now]) # factor
+            # factor * (1 - self.plr_feature[edge_now])
             if self.graph_state[edge_now][0] < 0:
                 # FINISH IF LINKS CAPACITY <0
-                return self.graph_state, self.reward, self.episode_over, self.demand, self.source, self.destination, currentPath
-                #      new_state,        reward,      done,              demand,      source,      destination,     path
+                return self.graph_state, self.reward, self.episode_over, self.demand, self.source, self.destination, currentPath, factor
+                #      new_state,        reward,      done,              demand,      source,      destination,     path,         factor/percent
                 # Done=True --> not enough capacity
             i = i + 1
             j = j + 1
@@ -348,8 +349,8 @@ class Env1(gym.Env):
         if (p > factor):
             self.reward = 0.0
 
-        return self.graph_state, self.reward, self.episode_over, self.demand, self.source, self.destination, currentPath
-        #      new_state,        reward,      done,              demand,      source,      destination,     path
+        return self.graph_state, self.reward, self.episode_over, self.demand, self.source, self.destination, currentPath, factor
+        #      new_state,        reward,      done,              demand,      source,      destination,     path,         factor/percent
         # Done=False --> all enough capacity
 
     def reset(self):

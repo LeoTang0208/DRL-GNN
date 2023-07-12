@@ -26,7 +26,7 @@ graph_topology = 0 # 0==NSFNET, 1==GEANT2, 2==Small Topology, 3==GBN
 # plr_cap = 0
 
 SEED = 37
-ITERATIONS = 10000 #! Original: 10000
+ITERATIONS = 6000 #! Original: 10000
 TRAINING_EPISODES = 20
 EVALUATION_EPISODES = 40
 FIRST_WORK_TRAIN_EPISODE = 60
@@ -309,6 +309,26 @@ class DQNAgent:
 
     @tf.function
     def _forward_pass(self, x):
+        # for i in range(12):
+        #     print("X[" + str(i) + "]", x[i])
+        
+        """
+        X >>>  
+        x[0]    ntwk_state  <tf.Tensor 'x:0' shape=(21, 20) dtype=float32>, 
+        x[1]    graph_id    <tf.Tensor 'x_1:0' shape=(21,) dtype=int32>,
+        x[2]    first       <tf.Tensor 'x_2:0' shape=(88,) dtype=int32>,
+        x[3]    second      <tf.Tensor 'x_3:0' shape=(88,) dtype=int32>,
+        x[4]    num_edge=21 <tf.Tensor 'x_4:0' shape=() dtype=int32>,
+        
+        x[5]    /           <tf.Tensor 'x_5:0' shape=() dtype=float32>,
+        x[6]    ntwk_state  <tf.Tensor 'x_6:0' shape=(84, 20) dtype=float32>,
+        x[7]    graph_id    <tf.Tensor 'x_7:0' shape=(84,) dtype=int32>,
+        x[8]    null        <tf.Tensor 'x_8:0' shape=() dtype=float32>,
+        x[9]    first       <tf.Tensor 'x_9:0' shape=(352,) dtype=int32>,
+        x[10]   second      <tf.Tensor 'x_10:0' shape=(352,) dtype=int32>,
+        x[11]   num_edge=84 <tf.Tensor 'x_11:0' shape=() dtype=int32>
+        """
+        
         prediction_state = self.primary_network(x[0], x[1], x[2], x[3], x[4], training=True)
         preds_next_target = tf.stop_gradient(self.target_network(x[6], x[7], x[9], x[10], x[11], training=True))
         return prediction_state, preds_next_target
@@ -341,6 +361,8 @@ class DQNAgent:
     def replay(self, episode):
         for i in range(MULTI_FACTOR_BATCH):
             batch = random.sample(self.memory, self.numbersamples)
+            
+            # print("BATCH >>>", batch)
             
             grad, loss = self._train_step(batch)
             if i%store_loss==0:
@@ -469,7 +491,7 @@ if __name__ == "__main__":
             # demand, src, dst
             action, _ = agent.act(env_eval, state, demand, source, destination, True)
             
-            new_state, reward, done, demand, source, destination, path_ = env_eval.make_step(state, action, demand, source, destination)
+            new_state, reward, done, demand, source, destination, path_, factor_ = env_eval.make_step(state, action, demand, source, destination)
             rewardAddTest = rewardAddTest + reward
             state = new_state
             if done:
@@ -502,7 +524,7 @@ if __name__ == "__main__":
             while 1:
                 # We execute evaluation over current state
                 action, state_action = agent.act(env_training, state, demand, source, destination, False)
-                new_state, reward, done, new_demand, new_source, new_destination, path_ = env_training.make_step(state, action, demand, source, destination)
+                new_state, reward, done, new_demand, new_source, new_destination, path_, factor_ = env_training.make_step(state, action, demand, source, destination)
 
                 agent.add_sample(env_training, state_action, action, reward, done, new_state, new_demand, new_source, new_destination)
                 state = new_state
@@ -529,7 +551,7 @@ if __name__ == "__main__":
                     # We execute evaluation over current state
                     action, _ = agent.act(env_eval, state, demand, source, destination, True)
                     
-                    new_state, reward, done, demand, source, destination, path_ = env_eval.make_step(state, action, demand, source, destination)
+                    new_state, reward, done, demand, source, destination, path_, factor_ = env_eval.make_step(state, action, demand, source, destination)
                     rewardAddTest = rewardAddTest + reward
                     state = new_state
                     if done:
@@ -565,7 +587,7 @@ if __name__ == "__main__":
             # demand, src, dst
             action, _ = agent.act(env_eval, state, demand, source, destination, True)
             
-            new_state, reward, done, demand, source, destination, path_ = env_eval.make_step(state, action, demand, source, destination)
+            new_state, reward, done, demand, source, destination, path_, factor_ = env_eval.make_step(state, action, demand, source, destination)
             rewardAddTest = rewardAddTest + reward
             state = new_state
             if done:

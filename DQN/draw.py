@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import os
 
-f = open("results_orig_diff_capa.txt", "r") #_orig_diff_capa
+f = open("./result_logs/results_orig_diff_capa.txt", "r") #_orig_diff_capa
 
 num = []
 
