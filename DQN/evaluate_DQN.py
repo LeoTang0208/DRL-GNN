@@ -27,7 +27,7 @@ tf.random.set_seed(1)
 # tf.config.threading.set_inter_op_parallelism_threads(1)
 # tf.config.threading.set_intra_op_parallelism_threads(1)
 
-NUMBER_EPISODES = 50
+NUMBER_EPISODES = 10
 # We assume that the number of samples is always larger than the number of demands any agent can ever allocate
 NUM_SAMPLES_EPSD = 100
 
@@ -661,7 +661,7 @@ if __name__ == "__main__":
     env_dqn = gym.make(ENV_NAME_AGENT)
     env_dqn.seed(SEED)
     env_dqn.generate_environment(graph_topology, listofDemands, rand_size, rand_seed, plr_cap)
-
+    
     dqn_agent = DQNAgent(env_dqn)
     checkpoint_dir = "./models" + "sample_DQN_agent_orig"
     
@@ -673,9 +673,6 @@ if __name__ == "__main__":
     checkpoint.restore(checkpoint_dir + "/" + str(hparams['T']) + "/ckpt-" + str(model_id))
     print("Load model " + checkpoint_dir + "/" + str(hparams['T']) + "/ckpt-" + str(model_id))
 
-    means_sap = np.zeros(NUMBER_EPISODES)
-    means_dqn = np.zeros(NUMBER_EPISODES)
-    means_lb = np.zeros(NUMBER_EPISODES)
     iters = np.zeros(NUMBER_EPISODES)
 
     experience_memory = deque(maxlen=NUMBER_EPISODES*NUM_SAMPLES_EPSD)
@@ -702,28 +699,26 @@ if __name__ == "__main__":
     rewards_dqn, _, demands_dqn = exec_dqn_model_episodes(experience_memory, env_dqn, dqn_agent)
 
     #DQN
-    mean_dqn = np.mean(rewards_dqn) 
-    fac_dqn = np.mean([(rewards_dqn[i] * np.max(listofDemands) / demands_dqn[i]) for i in range(len(rewards_dqn))])
+    mean_dqn = np.mean(rewards_dqn)
+    fac_dqn = [(rewards_dqn[i] * np.max(listofDemands) / demands_dqn[i]) for i in range(len(rewards_dqn))]
     print(mean_dqn)
-    means_dqn.fill(mean_dqn)
 
     #SAP
-    mean_sap = np.mean(rewards_sap) 
-    fac_sap = np.mean([(rewards_sap[i] * np.max(listofDemands) / demands_sap[i]) for i in range(len(rewards_sap))])
+    mean_sap = np.mean(rewards_sap)
+    fac_sap = [(rewards_sap[i] * np.max(listofDemands) / demands_sap[i]) for i in range(len(rewards_sap))]
     print(mean_sap)
-    means_sap.fill(mean_sap)
 
     #LB
-    mean_lb = np.mean(rewards_lb) 
-    fac_lb = np.mean([(rewards_lb[i] * np.max(listofDemands) / demands_lb[i]) for i in range(len(rewards_lb))])
+    mean_lb = np.mean(rewards_lb)
+    fac_lb = [(rewards_lb[i] * np.max(listofDemands) / demands_lb[i]) for i in range(len(rewards_lb))]
     print(mean_lb)
-    means_lb.fill(mean_lb)
     
     file = open("./result_logs/results_plr.txt", "a")
-    # for i in range(NUMBER_EPISODES):
-    #     file.write(str(0.0) + " " + str(hparams['T']) + " "+ str(rewards_dqn[i]) + " " + str(rewards_sap[i]) + " " + str(rewards_lb[i]) + "\n")
-    #     file.flush()
-    file.write("0 " + str(np.round(plr_cap, 2)) + " " + str(mean_dqn) + " " + str(mean_sap) + " " + str(mean_lb) + "\n")
-    file.write("1 " + str(np.round(plr_cap, 2)) + " " + str(fac_dqn) + " " + str(fac_sap) + " " + str(fac_lb) + "\n")
-    file.flush()
+    reliability = np.mean([(env_dqn.betw_scale[i] * env_dqn.plr_feature[i]) for i in range(env_dqn.numEdges)])
+    for i in range(NUMBER_EPISODES):
+        file.write(str(0) + " " + str(reliability) + " " + str(fac_dqn[i]) + " " + str(fac_sap[i]) + " " + str(fac_lb[i]) + "\n")
+        file.flush()
+    file.write(str(1) + " " + str(reliability) + " " + str(np.mean(fac_dqn)) + " " + str(np.mean(fac_sap)) + " " + str(np.mean(fac_lb)) + "\n")
+    file.write(str(2) + " " + str(reliability) + " " + str(np.mean(mean_dqn)) + " " + str(np.mean(mean_sap)) + " " + str(np.mean(mean_lb)) + "\n")
+    # file.flush()
     file.close()

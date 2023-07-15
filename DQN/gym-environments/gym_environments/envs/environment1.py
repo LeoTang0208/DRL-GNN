@@ -111,32 +111,18 @@ def compute_link_betweenness(g, k):
     n = len(g.nodes())
     betw = []
     
-    betw_sum = 0
+    betw_sum = float(0)
     
     for i, j in g.edges():
         # we add a very small number to avoid division by zero
         b_link = g.get_edge_data(i, j)['numsp'] / ((2.0 * n * (n - 1) * k) + 0.00000001)
-        
-        # print(b_link)
-        betw_sum = betw_sum + b_link
-        
         g.get_edge_data(i, j)['betweenness'] = b_link
         betw.append(b_link)
 
     mu_bet = np.mean(betw)
     std_bet = np.std(betw)
-
-    cap = []
-
-    for i, j in g.edges():
-        x = mu_bet + 0.0 * (g.get_edge_data(i, j)['betweenness'] - mu_bet) #!!!
-        cap.append(float(len(g.edges()) * 200 * x / betw_sum))
-        g.get_edge_data(i, j)["capacity"] = float(len(g.edges()) * 200 * x / betw_sum) # here
-        # print(g.get_edge_data(i, j)["capacity"])
-    
-    # print(">>>", np.std(cap))
-
-    return mu_bet, std_bet
+    betw_sum = np.sum(betw)
+    return mu_bet, std_bet, betw_sum
 
 class Env1(gym.Env):
     """
@@ -161,10 +147,12 @@ class Env1(gym.Env):
         self.firstTrueSize = None
         self.second = None
         self.between_feature = None
+        self.betw_scale = None
 
         # Mean and standard deviation of link betweenness
         self.mu_bet = None
         self.std_bet = None
+        self.betw_sum = None
 
         self.max_demand = 0
         self.K = 4 #4
@@ -263,7 +251,7 @@ class Env1(gym.Env):
         self.num_shortest_path(topology)
 
         # Compute the betweenness value for each link
-        self.mu_bet, self.std_bet = compute_link_betweenness(self.graph, self.K)
+        self.mu_bet, self.std_bet, self.betw_sum = compute_link_betweenness(self.graph, self.K)
 
         self.edgesDict = dict()
 
@@ -275,22 +263,34 @@ class Env1(gym.Env):
 
         self.graph_state = np.zeros((self.numEdges, 2))
         self.between_feature = np.zeros(self.numEdges)
+        self.betw_scale = np.zeros(self.numEdges)
         self.plr_feature = np.zeros(self.numEdges)
 
+        betw = []
+        for i, j in self.ordered_edges:
+            betw.append(self.graph.get_edge_data(i, j)['betweenness'])
+        
         position = 0
-        # print("?????", [edge[0] for edge in self.ordered_edges])
-        # print("?????", [edge[1] for edge in self.ordered_edges])
-        for edge in self.ordered_edges:
-            i = edge[0]
-            j = edge[1]
+        for i, j in self.ordered_edges:
             self.edgesDict[str(i)+':'+str(j)] = position
             self.edgesDict[str(j)+':'+str(i)] = position
+            
+            x = self.mu_bet + 0.0 * (self.graph.get_edge_data(i, j)['betweenness'] - self.mu_bet)
+            self.graph.get_edge_data(i, j)["capacity"] = float(self.numEdges * 200 * x / self.betw_sum)
+            
+            self.betw_scale[position] = self.graph.get_edge_data(i, j)['betweenness'] / np.min(betw)
+            
             betweenness = (self.graph.get_edge_data(i, j)['betweenness'] - self.mu_bet) / self.std_bet
+            # betweenness = (self.graph.get_edge_data(i, j)['betweenness'] - np.min(betw)) / (np.max(betw) - np.min(betw))
             self.graph.get_edge_data(i, j)['betweenness'] = betweenness
+            
             self.graph_state[position][0] = self.graph.get_edge_data(i, j)["capacity"]
             self.between_feature[position] = self.graph.get_edge_data(i, j)['betweenness']
             self.plr_feature[position] = self.graph.get_edge_data(i, j)['plr']
+            
             position = position + 1
+        
+        # print(self.between_feature, '\n', self.betw_scale, '\n', self.plr_feature)
 
         self.initial_state = np.copy(self.graph_state)
 
@@ -322,8 +322,8 @@ class Env1(gym.Env):
             # factor * (1 - self.plr_feature[edge_now])
             if self.graph_state[edge_now][0] < 0:
                 # FINISH IF LINKS CAPACITY <0
-                return self.graph_state, self.reward, self.episode_over, self.demand, self.source, self.destination, currentPath, factor
-                #      new_state,        reward,      done,              demand,      source,      destination,     path,         factor/percent
+                return self.graph_state, (self.reward * factor), self.episode_over, self.demand, self.source, self.destination, currentPath, factor
+                #      new_state,        reward,                 done,              demand,      source,      destination,     path,         factor/percent
                 # Done=True --> not enough capacity
             i = i + 1
             j = j + 1
@@ -349,8 +349,8 @@ class Env1(gym.Env):
         if (p > factor):
             self.reward = 0.0
 
-        return self.graph_state, self.reward, self.episode_over, self.demand, self.source, self.destination, currentPath, factor
-        #      new_state,        reward,      done,              demand,      source,      destination,     path,         factor/percent
+        return self.graph_state, (self.reward * factor), self.episode_over, self.demand, self.source, self.destination, currentPath, factor
+        #      new_state,        reward,                 done,              demand,      source,      destination,     path,         factor/percent
         # Done=False --> all enough capacity
 
     def reset(self):
