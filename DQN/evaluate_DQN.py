@@ -32,7 +32,7 @@ NUMBER_EPISODES = 10
 NUM_SAMPLES_EPSD = 100
 
 # Set evaluation topology
-graph_topology = 0 # 0==NSFNET, 1==GEANT2, 2==Small Topology, 3==GBN
+graph_topology = 1 # 0==NSFNET, 1==GEANT2, 2==Small Topology, 3==GBN
 # NEW! 4 == Random Graph
 
 nsf_s = [0, 0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 6, 7, 8, 8, 9, 9, 10, 10, 11]
@@ -346,7 +346,7 @@ def exec_lb_model_episodes(experience_memory, graph_topology):
     
     env_lb = gym.make(ENV_NAME)
     env_lb.seed(SEED)
-    env_lb.generate_environment(graph_topology, listofDemands, rand_size, rand_seed, plr_cap)
+    env_lb.generate_environment(graph_topology, listofDemands, rand_size, rand_seed, plr_max, std_dev)
 
     agent = LBAgent()
     rewards_lb = np.zeros(NUMBER_EPISODES)
@@ -440,7 +440,7 @@ def exec_sap_model_episodes(experience_memory, graph_topology):
     
     env_sap = gym.make(ENV_NAME)
     env_sap.seed(SEED)
-    env_sap.generate_environment(graph_topology, listofDemands, rand_size, rand_seed, plr_cap)
+    env_sap.generate_environment(graph_topology, listofDemands, rand_size, rand_seed, plr_max, std_dev)
 
     agent = SAPAgent()
     rewards_sap = np.zeros(NUMBER_EPISODES)
@@ -621,6 +621,7 @@ if __name__ == "__main__":
     parser.add_argument('-s', type=int, required=True)
     parser.add_argument('-e', type=int, required=True)
     parser.add_argument('-p', type=float, required=True)
+    parser.add_argument('-v', type=float, required=True)
     args = parser.parse_args()
 
     aux = args.d[0].split(".")
@@ -633,7 +634,8 @@ if __name__ == "__main__":
     # TODO: Parse rand_size and rand_seed
     rand_size = args.s
     rand_seed = args.e
-    plr_cap = args.p
+    plr_max = args.p
+    std_dev = args.v
     # print(">>", rand_size, rand_seed)
 
     topo = ""
@@ -660,7 +662,7 @@ if __name__ == "__main__":
 
     env_dqn = gym.make(ENV_NAME_AGENT)
     env_dqn.seed(SEED)
-    env_dqn.generate_environment(graph_topology, listofDemands, rand_size, rand_seed, plr_cap)
+    env_dqn.generate_environment(graph_topology, listofDemands, rand_size, rand_seed, plr_max, std_dev)
     
     dqn_agent = DQNAgent(env_dqn)
     checkpoint_dir = "./models" + "sample_DQN_agent_orig"
@@ -713,12 +715,23 @@ if __name__ == "__main__":
     fac_lb = [(rewards_lb[i] * np.max(listofDemands) / demands_lb[i]) for i in range(len(rewards_lb))]
     print(mean_lb)
     
-    file = open("./result_logs/results_plr.txt", "a")
+    file = open("./result_logs/plr_GEANT2.txt", "a")
+    
+    # cap = []
+    # for i, j in env_dqn.ordered_edges:
+    #     # print(env_dqn.graph.get_edge_data(i, j)["capacity"])
+    #     cap.append(env_dqn.graph.get_edge_data(i, j)["capacity"])
+    
+    # print(cap)
+    # print(np.std(cap))
+    
     reliability = np.mean([(env_dqn.betw_scale[i] * env_dqn.plr_feature[i]) for i in range(env_dqn.numEdges)])
     for i in range(NUMBER_EPISODES):
         file.write(str(0) + " " + str(reliability) + " " + str(fac_dqn[i]) + " " + str(fac_sap[i]) + " " + str(fac_lb[i]) + "\n")
         file.flush()
+    
     file.write(str(1) + " " + str(reliability) + " " + str(np.mean(fac_dqn)) + " " + str(np.mean(fac_sap)) + " " + str(np.mean(fac_lb)) + "\n")
     file.write(str(2) + " " + str(reliability) + " " + str(np.mean(mean_dqn)) + " " + str(np.mean(mean_sap)) + " " + str(np.mean(mean_lb)) + "\n")
-    # file.flush()
+    file.flush()
+    
     file.close()

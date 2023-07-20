@@ -443,21 +443,23 @@ if __name__ == "__main__":
     parser.add_argument('-s', type=int, required=True)
     parser.add_argument('-e', type=int, required=True)
     parser.add_argument('-p', type=float, required=True)
+    parser.add_argument('-v', type=float, required=True)
     args = parser.parse_args()
 
     rand_size = args.s
     rand_seed = args.e
     plr_cap = args.p
+    std_dev = args.v
 
     env_training = gym.make(ENV_NAME)
     np.random.seed() #SEED = 37 used
     env_training.seed()
-    env_training.generate_environment(graph_topology, listofDemands, rand_size, rand_seed, plr_cap)
+    env_training.generate_environment(graph_topology, listofDemands, rand_size, rand_seed, plr_cap, std_dev)
 
     env_eval = gym.make(ENV_NAME)
     np.random.seed() #SEED = 37 used
     env_eval.seed()
-    env_eval.generate_environment(graph_topology, listofDemands, rand_size, rand_seed, plr_cap)
+    env_eval.generate_environment(graph_topology, listofDemands, rand_size, rand_seed, plr_cap, std_dev)
 
     batch_size = hparams['batch_size']
     agent = DQNAgent(batch_size)

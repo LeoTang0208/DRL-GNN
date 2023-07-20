@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import os
 
-f = open("./result_logs/results_orig_diff_capa.txt", "r") #_orig_diff_capa
+f = open("./result_logs/results.txt", "r") #_orig_diff_capa
 
 num = []
 
@@ -11,7 +11,7 @@ for line in f:
     num.append(a)
 
 cnt = 1
-for k in [4]:
+for k in [4, 6, 8, 10]:
     x = []
     drl = []
     sap = []
@@ -44,6 +44,7 @@ for k in [4]:
         lb_m.append(float(s3 / t))
     
     # plt.subplot(2, 2, cnt)
+    fig = plt.figure(cnt)
     d1 = plt.scatter(x, drl, c = "r", s=5, alpha=0.5)
     d2 = plt.scatter(x, sap, c = "g", s=5, alpha=0.5)
     d3 = plt.scatter(x, lb, c = "b", s=5, alpha=0.5)
