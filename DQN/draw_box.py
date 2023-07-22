@@ -16,7 +16,7 @@ for line in f:
 
 f.close()
 
-# print(sum(drl) / len(drl), sum(sap) / len(sap))
+print(sum(drl) / len(drl), sum(sap) / len(sap))
 
 plt.boxplot([drl, sap, lb], labels=['DRL+GNN', 'SAP', 'LB'])
 plt.ylim([000, 1600])
