@@ -278,7 +278,7 @@ class Env1(gym.Env):
             x = self.mu_bet + std_dev * (self.graph.get_edge_data(i, j)['betweenness'] - self.mu_bet)
             self.graph.get_edge_data(i, j)["capacity"] = float(self.numEdges * 200 * x / self.betw_sum)
             
-            self.betw_scale[position] = self.graph.get_edge_data(i, j)['betweenness'] / np.min(betw)
+            self.betw_scale[position] = self.graph.get_edge_data(i, j)['betweenness'] # / np.min(betw)
             
             betweenness = (self.graph.get_edge_data(i, j)['betweenness'] - self.mu_bet) / self.std_bet
             # betweenness = (self.graph.get_edge_data(i, j)['betweenness'] - np.min(betw)) / (np.max(betw) - np.min(betw))
@@ -290,6 +290,11 @@ class Env1(gym.Env):
             
             position = position + 1
         
+        sum_cap = 0
+        for i, j in self.ordered_edges:
+            sum_cap += self.graph.get_edge_data(i, j)["capacity"]
+            print(self.graph.get_edge_data(i, j)["capacity"])
+        print(sum_cap)
         # print(self.between_feature, '\n', self.betw_scale, '\n', self.plr_feature)
 
         self.initial_state = np.copy(self.graph_state)

@@ -32,11 +32,8 @@ NUMBER_EPISODES = 10
 NUM_SAMPLES_EPSD = 100
 
 # Set evaluation topology
-graph_topology = 1 # 0==NSFNET, 1==GEANT2, 2==Small Topology, 3==GBN
+graph_topology = 0 # 0==NSFNET, 1==GEANT2, 2==Small Topology, 3==GBN
 # NEW! 4 == Random Graph
-
-nsf_s = [0, 0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 6, 7, 8, 8, 9, 9, 10, 10, 11]
-nsf_t = [1, 2, 3, 2, 7, 5, 4, 8, 5, 6, 12, 13, 7, 10, 9, 11, 10, 12, 11, 13, 12]
 
 listofDemands = [8, 32, 64]
 
@@ -342,11 +339,17 @@ class DQNAgent:
         return inputs
 
 def exec_lb_model_episodes(experience_memory, graph_topology):
-    nsf_w = [0 for i in range(len(nsf_s))]
     
     env_lb = gym.make(ENV_NAME)
     env_lb.seed(SEED)
     env_lb.generate_environment(graph_topology, listofDemands, rand_size, rand_seed, plr_max, std_dev)
+    
+    link_u = []
+    link_v = []
+    for i, j in env_lb.ordered_edges:
+        link_u.append(i)
+        link_v.append(j)
+    link_count = [0 for i in range(len(link_u))]
 
     agent = LBAgent()
     rewards_lb = np.zeros(NUMBER_EPISODES)
@@ -373,9 +376,9 @@ def exec_lb_model_episodes(experience_memory, graph_topology):
             for i in range(len(currentpath) - 1):
                 u = currentpath[i]
                 v = currentpath[i + 1]
-                for j in range(len(nsf_w)):
-                    if (((u == nsf_s[j]) and (v == nsf_t[j])) or ((u == nsf_t[j]) and (v == nsf_s[j]))):
-                        nsf_w[j] = nsf_w[j] + 1
+                for j in range(len(link_count)):
+                    if (((u == link_u[j]) and (v == link_v[j])) or ((u == link_v[j]) and (v == link_u[j]))):
+                        link_count[j] = link_count[j] + 1
             
             env_lb.demand = demand
             env_lb.source = source
@@ -406,9 +409,9 @@ def exec_lb_model_episodes(experience_memory, graph_topology):
             for i in range(len(currentpath) - 1):
                 u = currentpath[i]
                 v = currentpath[i + 1]
-                for j in range(len(nsf_w)):
-                    if (((u == nsf_s[j]) and (v == nsf_t[j])) or ((u == nsf_t[j]) and (v == nsf_s[j]))):
-                        nsf_w[j] = nsf_w[j] + 1
+                for j in range(len(link_count)):
+                    if (((u == link_u[j]) and (v == link_v[j])) or ((u == link_v[j]) and (v == link_u[j]))):
+                        link_count[j] = link_count[j] + 1
             
             env_lb.demand = demand
             env_lb.source = source
@@ -433,14 +436,20 @@ def exec_lb_model_episodes(experience_memory, graph_topology):
             new_episode_it = new_episode_it + 1
             iter_episode = new_episode_it*NUM_SAMPLES_EPSD
     
-    return rewards_lb, nsf_w, demands_lb
+    return rewards_lb, link_count, demands_lb
 
 def exec_sap_model_episodes(experience_memory, graph_topology):
-    nsf_w = [0 for i in range(len(nsf_s))]
     
     env_sap = gym.make(ENV_NAME)
     env_sap.seed(SEED)
     env_sap.generate_environment(graph_topology, listofDemands, rand_size, rand_seed, plr_max, std_dev)
+    
+    link_u = []
+    link_v = []
+    for i, j in env_sap.ordered_edges:
+        link_u.append(i)
+        link_v.append(j)
+    link_count = [0 for i in range(len(link_u))]
 
     agent = SAPAgent()
     rewards_sap = np.zeros(NUMBER_EPISODES)
@@ -467,9 +476,9 @@ def exec_sap_model_episodes(experience_memory, graph_topology):
             for i in range(len(currentpath) - 1):
                 u = currentpath[i]
                 v = currentpath[i + 1]
-                for j in range(len(nsf_w)):
-                    if (((u == nsf_s[j]) and (v == nsf_t[j])) or ((u == nsf_t[j]) and (v == nsf_s[j]))):
-                        nsf_w[j] = nsf_w[j] + 1
+                for j in range(len(link_count)):
+                    if (((u == link_u[j]) and (v == link_v[j])) or ((u == link_v[j]) and (v == link_u[j]))):
+                        link_count[j] = link_count[j] + 1
             
             env_sap.demand = demand
             env_sap.source = source
@@ -500,9 +509,9 @@ def exec_sap_model_episodes(experience_memory, graph_topology):
             for i in range(len(currentpath) - 1):
                 u = currentpath[i]
                 v = currentpath[i + 1]
-                for j in range(len(nsf_w)):
-                    if (((u == nsf_s[j]) and (v == nsf_t[j])) or ((u == nsf_t[j]) and (v == nsf_s[j]))):
-                        nsf_w[j] = nsf_w[j] + 1
+                for j in range(len(link_count)):
+                    if (((u == link_u[j]) and (v == link_v[j])) or ((u == link_v[j]) and (v == link_u[j]))):
+                        link_count[j] = link_count[j] + 1
             
             env_sap.demand = demand
             env_sap.source = source
@@ -527,10 +536,16 @@ def exec_sap_model_episodes(experience_memory, graph_topology):
             new_episode_it = new_episode_it + 1
             iter_episode = new_episode_it * NUM_SAMPLES_EPSD
     
-    return rewards_sap, nsf_w, demands_sap
+    return rewards_sap, link_count, demands_sap
 
 def exec_dqn_model_episodes(experience_memory, env_dqn, agent):
-    nsf_w = [0 for i in range(len(nsf_s))]
+    
+    link_u = []
+    link_v = []
+    for i, j in env_dqn.ordered_edges:
+        link_u.append(i)
+        link_v.append(j)
+    link_count = [0 for i in range(len(link_u))]
     
     rewards_dqn = np.zeros(NUMBER_EPISODES)
     demands_dqn = np.zeros(NUMBER_EPISODES)
@@ -556,9 +571,9 @@ def exec_dqn_model_episodes(experience_memory, env_dqn, agent):
             for i in range(len(currentpath) - 1):
                 u = currentpath[i]
                 v = currentpath[i + 1]
-                for j in range(len(nsf_w)):
-                    if (((u == nsf_s[j]) and (v == nsf_t[j])) or ((u == nsf_t[j]) and (v == nsf_s[j]))):
-                        nsf_w[j] = nsf_w[j] + 1
+                for j in range(len(link_count)):
+                    if (((u == link_u[j]) and (v == link_v[j])) or ((u == link_v[j]) and (v == link_u[j]))):
+                        link_count[j] = link_count[j] + 1
             
             rewardAdd = rewardAdd + reward
             if (not done):
@@ -585,9 +600,9 @@ def exec_dqn_model_episodes(experience_memory, env_dqn, agent):
             for i in range(len(currentpath) - 1):
                 u = currentpath[i]
                 v = currentpath[i + 1]
-                for j in range(len(nsf_w)):
-                    if (((u == nsf_s[j]) and (v == nsf_t[j])) or ((u == nsf_t[j]) and (v == nsf_s[j]))):
-                        nsf_w[j] = nsf_w[j] + 1
+                for j in range(len(link_count)):
+                    if (((u == link_u[j]) and (v == link_v[j])) or ((u == link_v[j]) and (v == link_u[j]))):
+                        link_count[j] = link_count[j] + 1
             
             rewardAdd = rewardAdd + reward
             if (not done):
@@ -609,7 +624,7 @@ def exec_dqn_model_episodes(experience_memory, env_dqn, agent):
                 print("DQN Episode >>> ", new_episode_it)
             iter_episode = new_episode_it * NUM_SAMPLES_EPSD
     
-    return rewards_dqn, nsf_w, demands_dqn
+    return rewards_dqn, link_count, demands_dqn
 
 if __name__ == "__main__":
     # python evaluate_DQN.py -d ./Logs/expsample_DQN_agentLogs.txt
@@ -715,7 +730,7 @@ if __name__ == "__main__":
     fac_lb = [(rewards_lb[i] * np.max(listofDemands) / demands_lb[i]) for i in range(len(rewards_lb))]
     print(mean_lb)
     
-    file = open("./result_logs/plr_GEANT2.txt", "a")
+    file = open("./result_logs/GEANT2_diff_capa_new.txt", "a")
     
     # cap = []
     # for i, j in env_dqn.ordered_edges:
@@ -725,13 +740,13 @@ if __name__ == "__main__":
     # print(cap)
     # print(np.std(cap))
     
-    reliability = np.mean([(env_dqn.betw_scale[i] * env_dqn.plr_feature[i]) for i in range(env_dqn.numEdges)])
-    for i in range(NUMBER_EPISODES):
-        file.write(str(0) + " " + str(reliability) + " " + str(fac_dqn[i]) + " " + str(fac_sap[i]) + " " + str(fac_lb[i]) + "\n")
-        file.flush()
+    reliability = np.mean([(env_dqn.betw_scale[i] / np.min(env_dqn.betw_scale) * env_dqn.plr_feature[i]) for i in range(env_dqn.numEdges)])
+    # for i in range(NUMBER_EPISODES):
+    #     file.write(str(0) + " " + str(reliability) + " " + str(std_dev) + " " + str(fac_dqn[i]) + " " + str(fac_sap[i]) + " " + str(fac_lb[i]) + "\n")
+    #     file.flush()
     
-    file.write(str(1) + " " + str(reliability) + " " + str(np.mean(fac_dqn)) + " " + str(np.mean(fac_sap)) + " " + str(np.mean(fac_lb)) + "\n")
-    file.write(str(2) + " " + str(reliability) + " " + str(np.mean(mean_dqn)) + " " + str(np.mean(mean_sap)) + " " + str(np.mean(mean_lb)) + "\n")
+    file.write(str(1) + " " + str(reliability) + " " + str(std_dev) + " " + str(np.mean(fac_dqn)) + " " + str(np.mean(fac_sap)) + " " + str(np.mean(fac_lb)) + "\n")
+    file.write(str(2) + " " + str(reliability) + " " + str(std_dev) + " " + str(np.mean(mean_dqn)) + " " + str(np.mean(mean_sap)) + " " + str(np.mean(mean_lb)) + "\n")
     file.flush()
     
     file.close()
