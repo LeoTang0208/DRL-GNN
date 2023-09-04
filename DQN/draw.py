@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import os
 
-f = open("./result_logs/results_orig_diff_capa.txt", "r") #_orig_diff_capa
+f = open("./result_logs/results.txt", "r") #_orig_diff_capa
 
 num = []
 
@@ -11,7 +11,7 @@ for line in f:
     num.append(a)
 
 cnt = 1
-for k in [4, 8]:
+for k in [4, 6, 8, 10]:
     x = []
     drl = []
     sap = []
@@ -60,7 +60,7 @@ for k in [4, 8]:
     plt.xlim([-0.1, 3.1])
     plt.ylim([300, 1100])
     
-    plt.xlabel('Standard Deviation (\u03C3)', fontsize=12)
+    plt.xlabel('Standard Deviation Indicator (\u03B3)', fontsize=12)
     plt.ylabel('Bandwidth Allocated', fontsize=12)
     
     plt.title('K = {} Shortest Paths Considered'.format(k))

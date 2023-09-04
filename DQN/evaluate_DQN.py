@@ -27,12 +27,12 @@ tf.random.set_seed(1)
 # tf.config.threading.set_inter_op_parallelism_threads(1)
 # tf.config.threading.set_intra_op_parallelism_threads(1)
 
-NUMBER_EPISODES = 10
+NUMBER_EPISODES = 50
 # We assume that the number of samples is always larger than the number of demands any agent can ever allocate
 NUM_SAMPLES_EPSD = 100
 
 # Set evaluation topology
-graph_topology = 0 # 0==NSFNET, 1==GEANT2, 2==Small Topology, 3==GBN
+graph_topology = 1 # 0==NSFNET, 1==GEANT2, 2==Small Topology, 3==GBN
 # NEW! 4 == Random Graph
 
 listofDemands = [8, 32, 64]
@@ -350,6 +350,8 @@ def exec_lb_model_episodes(experience_memory, graph_topology):
         link_u.append(i)
         link_v.append(j)
     link_count = [0 for i in range(len(link_u))]
+    print(link_u)
+    print(link_v)
 
     agent = LBAgent()
     rewards_lb = np.zeros(NUMBER_EPISODES)
