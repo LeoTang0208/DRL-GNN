@@ -3,7 +3,16 @@ import random
 
 random.seed()
 
-cmd_base = "python evaluate_DQN.py -d ./Logs/expsample_DQN_agent_plr_4_Logs.txt"
+'''
+Rule:
+1. -s : size of random topology
+2. -e : seed of random topology
+3. -p : plr
+4. -v : \gamma, std dev indicator
+'''
+
+
+cmd_base = "python evaluate_DQN.py -d ./Logs/expsample_DQN_agent_orig_4_Logs.txt"
 
 # for p in range(11):
 #     if (p != 0):

@@ -290,11 +290,11 @@ class Env1(gym.Env):
             
             position = position + 1
         
-        sum_cap = 0
-        for i, j in self.ordered_edges:
-            sum_cap += self.graph.get_edge_data(i, j)["capacity"]
-            print(self.graph.get_edge_data(i, j)["capacity"])
-        print(sum_cap)
+        # sum_cap = 0
+        # for i, j in self.ordered_edges:
+        #     sum_cap += self.graph.get_edge_data(i, j)["capacity"]
+        #     print(self.graph.get_edge_data(i, j)["capacity"])
+        # print(sum_cap)
         # print(self.between_feature, '\n', self.betw_scale, '\n', self.plr_feature)
 
         self.initial_state = np.copy(self.graph_state)
