@@ -727,13 +727,14 @@ if __name__ == "__main__":
     for i, j in env_dqn.ordered_edges:
         # print(env_dqn.graph.get_edge_data(i, j)["capacity"])
         cap.append(env_dqn.graph.get_edge_data(i, j)["capacity"])
+    cap = np.array(cap)
     
-    print(cap)
+    # print(cap)
     # print(np.std(cap))
     
     print("!!!!!!!")
     # print(load_lb / NUMBER_EPISODES)
-    print([(_load / NUMBER_EPISODES) for _load in load_lb])
+    # print([(_load / NUMBER_EPISODES) for _load in load_lb])
     
     lb_utilize = []
     sap_utilize = []
@@ -745,7 +746,37 @@ if __name__ == "__main__":
     
     fig = plt.figure()
     pos = nx.spring_layout(env_dqn.graph, seed = 0)
-    nx.draw(env_dqn.graph, pos, with_labels=True, node_color="goldenrod", width = 3 * np.array(dqn_utilize))
+    widths = 2 + 3 * (cap - cap.min()) / (cap.max() - cap.min())
+    colors = np.array(dqn_utilize)
+    nodes = nx.draw_networkx_nodes(env_dqn.graph, pos, node_color = "#A0CBE2")
+    edges = nx.draw_networkx_edges(env_dqn.graph, pos, width = widths, edge_color = colors, edge_cmap = plt.cm.rainbow, edge_vmin = 0.0, edge_vmax = 1.0)
+    labels = nx.draw_networkx_labels(env_dqn.graph, pos)
+    plt.colorbar(edges)
+    plt.title("Deep Reinforcement Learning")
+    plt.axis("off")
+    
+    fig = plt.figure()
+    pos = nx.spring_layout(env_dqn.graph, seed = 0)
+    widths = 2 + 3 * (cap - cap.min()) / (cap.max() - cap.min())
+    colors = np.array(sap_utilize)
+    nodes = nx.draw_networkx_nodes(env_dqn.graph, pos, node_color = "#A0CBE2")
+    edges = nx.draw_networkx_edges(env_dqn.graph, pos, width = widths, edge_color = colors, edge_cmap = plt.cm.rainbow, edge_vmin = 0.0, edge_vmax = 1.0)
+    labels = nx.draw_networkx_labels(env_dqn.graph, pos)
+    plt.colorbar(edges)
+    plt.title("Shortest Available Path")
+    plt.axis("off")
+    
+    fig = plt.figure()
+    pos = nx.spring_layout(env_dqn.graph, seed = 0)
+    widths = 2 + 3 * (cap - cap.min()) / (cap.max() - cap.min())
+    colors = np.array(lb_utilize)
+    nodes = nx.draw_networkx_nodes(env_dqn.graph, pos, node_color = "#A0CBE2")
+    edges = nx.draw_networkx_edges(env_dqn.graph, pos, width = widths, edge_color = colors, edge_cmap = plt.cm.rainbow, edge_vmin = 0.0, edge_vmax = 1.0)
+    labels = nx.draw_networkx_labels(env_dqn.graph, pos)
+    plt.colorbar(edges)
+    plt.title("Load Balancing")
+    plt.axis("off")
+    
     plt.show()
     
     print("!!!!!!!")
