@@ -27,7 +27,7 @@ tf.random.set_seed(1)
 # tf.config.threading.set_inter_op_parallelism_threads(1)
 # tf.config.threading.set_intra_op_parallelism_threads(1)
 
-NUMBER_EPISODES = 50
+NUMBER_EPISODES = 100
 # We assume that the number of samples is always larger than the number of demands any agent can ever allocate
 NUM_SAMPLES_EPSD = 100
 
@@ -724,17 +724,11 @@ if __name__ == "__main__":
         link_v.append(j)
     
     cap = []
+    print(">>>>>", env_dqn.ordered_edges)
     for i, j in env_dqn.ordered_edges:
         # print(env_dqn.graph.get_edge_data(i, j)["capacity"])
         cap.append(env_dqn.graph.get_edge_data(i, j)["capacity"])
     cap = np.array(cap)
-    
-    # print(cap)
-    # print(np.std(cap))
-    
-    print("!!!!!!!")
-    # print(load_lb / NUMBER_EPISODES)
-    # print([(_load / NUMBER_EPISODES) for _load in load_lb])
     
     lb_utilize = []
     sap_utilize = []
@@ -744,45 +738,77 @@ if __name__ == "__main__":
         sap_utilize.append((load_sap[i] / NUMBER_EPISODES) / cap[i])
         dqn_utilize.append((load_dqn[i] / NUMBER_EPISODES) / cap[i])
     
-    fig = plt.figure()
-    pos = nx.spring_layout(env_dqn.graph, seed = 0)
-    widths = 2 + 3 * (cap - cap.min()) / (cap.max() - cap.min())
-    colors = np.array(dqn_utilize)
-    nodes = nx.draw_networkx_nodes(env_dqn.graph, pos, node_color = "#A0CBE2")
-    edges = nx.draw_networkx_edges(env_dqn.graph, pos, width = widths, edge_color = colors, edge_cmap = plt.cm.rainbow, edge_vmin = 0.0, edge_vmax = 1.0)
-    labels = nx.draw_networkx_labels(env_dqn.graph, pos)
-    plt.colorbar(edges)
-    plt.title("Deep Reinforcement Learning")
-    plt.axis("off")
+    edge_utilize = []
+    for i in range(len(cap)):
+        edge_ = {
+            "node" : (link_u[i], link_v[i]),
+            "cap" : cap[i],
+            "betw" : env_dqn.betw_scale[i],
+            "plr" : env_dqn.plr_feature[i],
+            "dqn" : dqn_utilize[i],
+            "sap" : sap_utilize[i],
+            "lb" : lb_utilize[i]
+        }
+        edge_utilize.append(edge_)
+    
+    def compare_edge(e):
+        return e["betw"]
+    
+    edge_utilize.sort(reverse = True, key = compare_edge)
+    print([e["betw"] for e in edge_utilize])
     
     fig = plt.figure()
+    edges_arange = 1.5 * np.arange(len(env_dqn.ordered_edges))
+    plt.bar(edges_arange - 0.4, [e["dqn"] for e in edge_utilize], 0.4, color = "darkblue", label = "Deep Reinforcement Learning")
+    plt.bar(edges_arange + 0.0, [e["sap"] for e in edge_utilize], 0.4, color = "orange", label = "Shortest Available Path")
+    plt.bar(edges_arange + 0.4, [e["lb"] for e in edge_utilize], 0.4, color = "dodgerblue", label = "Load Balancing")
+    plt.xticks(edges_arange, [e["node"] for e in edge_utilize])
+    plt.xlabel("Links / Edges")
+    plt.ylabel("Link Utilization")
+    plt.legend()
+    
     pos = nx.spring_layout(env_dqn.graph, seed = 0)
-    widths = 2 + 3 * (cap - cap.min()) / (cap.max() - cap.min())
-    colors = np.array(sap_utilize)
-    nodes = nx.draw_networkx_nodes(env_dqn.graph, pos, node_color = "#A0CBE2")
-    edges = nx.draw_networkx_edges(env_dqn.graph, pos, width = widths, edge_color = colors, edge_cmap = plt.cm.rainbow, edge_vmin = 0.0, edge_vmax = 1.0)
-    labels = nx.draw_networkx_labels(env_dqn.graph, pos)
-    plt.colorbar(edges)
-    plt.title("Shortest Available Path")
-    plt.axis("off")
+    widths = 2 + 3 * (cap - cap.min()) / (cap.max() - cap.min() + 0.000001)
+    edge_options = {
+        "width" : widths, 
+        # "edge_color" : colors,
+        "edge_cmap" : plt.cm.rainbow,
+        "edge_vmin" : 0.0,
+        "edge_vmax" : 1.0
+    }
     
-    fig = plt.figure()
-    pos = nx.spring_layout(env_dqn.graph, seed = 0)
-    widths = 2 + 3 * (cap - cap.min()) / (cap.max() - cap.min())
-    colors = np.array(lb_utilize)
-    nodes = nx.draw_networkx_nodes(env_dqn.graph, pos, node_color = "#A0CBE2")
-    edges = nx.draw_networkx_edges(env_dqn.graph, pos, width = widths, edge_color = colors, edge_cmap = plt.cm.rainbow, edge_vmin = 0.0, edge_vmax = 1.0)
-    labels = nx.draw_networkx_labels(env_dqn.graph, pos)
-    plt.colorbar(edges)
-    plt.title("Load Balancing")
-    plt.axis("off")
+    # fig = plt.figure()
+    # colors = np.array(dqn_utilize)
+    # nodes = nx.draw_networkx_nodes(env_dqn.graph, pos, node_color = "#A0CBE2")
+    # edges = nx.draw_networkx_edges(env_dqn.graph, pos, edge_color = colors, **edge_options)
+    # labels = nx.draw_networkx_labels(env_dqn.graph, pos)
+    # plt.colorbar(edges)
+    # plt.title("Deep Reinforcement Learning")
+    # plt.axis("off")
     
-    plt.show()
+    # fig = plt.figure()
+    # colors = np.array(sap_utilize)
+    # nodes = nx.draw_networkx_nodes(env_dqn.graph, pos, node_color = "#A0CBE2")
+    # edges = nx.draw_networkx_edges(env_dqn.graph, pos, edge_color = colors, **edge_options)
+    # labels = nx.draw_networkx_labels(env_dqn.graph, pos)
+    # plt.colorbar(edges)
+    # plt.title("Shortest Available Path")
+    # plt.axis("off")
     
-    print("!!!!!!!")
+    # fig = plt.figure()
+    # colors = np.array(lb_utilize)
+    # nodes = nx.draw_networkx_nodes(env_dqn.graph, pos, node_color = "#A0CBE2")
+    # edges = nx.draw_networkx_edges(env_dqn.graph, pos, edge_color = colors, **edge_options)
+    # labels = nx.draw_networkx_labels(env_dqn.graph, pos)
+    # plt.colorbar(edges)
+    # plt.title("Load Balancing")
+    # plt.axis("off")
+    
+    # plt.show()
 
     #DQN
     mean_dqn = np.mean(rewards_dqn)
+    print(">>>>>>", rewards_dqn, demands_dqn)
     fac_dqn = [(rewards_dqn[i] * np.max(listofDemands) / demands_dqn[i]) for i in range(len(rewards_dqn))]
     print(mean_dqn)
 
@@ -809,3 +835,5 @@ if __name__ == "__main__":
     file.flush()
     
     file.close()
+    
+    plt.show()
