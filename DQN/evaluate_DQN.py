@@ -27,7 +27,7 @@ tf.random.set_seed(1)
 # tf.config.threading.set_inter_op_parallelism_threads(1)
 # tf.config.threading.set_intra_op_parallelism_threads(1)
 
-NUMBER_EPISODES = 100
+NUMBER_EPISODES = 50
 # We assume that the number of samples is always larger than the number of demands any agent can ever allocate
 NUM_SAMPLES_EPSD = 100
 
@@ -684,9 +684,6 @@ if __name__ == "__main__":
     dqn_agent = DQNAgent(env_dqn)
     checkpoint_dir = "./models" + "sample_DQN_agent_orig"
     
-    # checkpoint_dir = "./Results" + "/models" + differentiation_str
-    # model_id = 33
-    
     checkpoint = tf.train.Checkpoint(model=dqn_agent.primary_network, optimizer=dqn_agent.optimizer)
     # Restore variables on creation if a checkpoint exists.
     checkpoint.restore(checkpoint_dir + "/" + str(hparams['T']) + "/ckpt-" + str(model_id))
@@ -724,7 +721,6 @@ if __name__ == "__main__":
         link_v.append(j)
     
     cap = []
-    print(">>>>>", env_dqn.ordered_edges)
     for i, j in env_dqn.ordered_edges:
         # print(env_dqn.graph.get_edge_data(i, j)["capacity"])
         cap.append(env_dqn.graph.get_edge_data(i, j)["capacity"])
@@ -741,7 +737,7 @@ if __name__ == "__main__":
     edge_utilize = []
     for i in range(len(cap)):
         edge_ = {
-            "node" : (link_u[i], link_v[i]),
+            "node" : (link_u[i] + 1, link_v[i] + 1),
             "cap" : cap[i],
             "betw" : env_dqn.betw_scale[i],
             "plr" : env_dqn.plr_feature[i],
@@ -755,17 +751,23 @@ if __name__ == "__main__":
         return e["betw"]
     
     edge_utilize.sort(reverse = True, key = compare_edge)
-    print([e["betw"] for e in edge_utilize])
     
     fig = plt.figure()
-    edges_arange = 1.5 * np.arange(len(env_dqn.ordered_edges))
-    plt.bar(edges_arange - 0.4, [e["dqn"] for e in edge_utilize], 0.4, color = "darkblue", label = "Deep Reinforcement Learning")
-    plt.bar(edges_arange + 0.0, [e["sap"] for e in edge_utilize], 0.4, color = "orange", label = "Shortest Available Path")
-    plt.bar(edges_arange + 0.4, [e["lb"] for e in edge_utilize], 0.4, color = "dodgerblue", label = "Load Balancing")
-    plt.xticks(edges_arange, [e["node"] for e in edge_utilize])
+    
+    edges_arange = 4 * np.arange(len(env_dqn.ordered_edges))
+    plt.bar(edges_arange - 1, [e["dqn"] for e in edge_utilize], 1, color = "darkblue", label = "Deep Reinforcement Learning")
+    plt.bar(edges_arange + 0.0, [e["sap"] for e in edge_utilize], 1, color = "orange", label = "Shortest Available Path")
+    plt.bar(edges_arange + 1, [e["lb"] for e in edge_utilize], 1, color = "dodgerblue", label = "Load Balancing")
+    plt.xticks(edges_arange, [e["node"] for e in edge_utilize], rotation = 45)
+    
+    # plt.axis("tight")
+    plt.xlim([edges_arange.min() - 2, edges_arange.max() + 2])
+    plt.ylim([0.0, 1.001])
     plt.xlabel("Links / Edges")
     plt.ylabel("Link Utilization")
-    plt.legend()
+    plt.legend(loc = "upper left")
+    
+    plt.margins(0.05, 0)
     
     pos = nx.spring_layout(env_dqn.graph, seed = 0)
     widths = 2 + 3 * (cap - cap.min()) / (cap.max() - cap.min() + 0.000001)
@@ -808,18 +810,17 @@ if __name__ == "__main__":
 
     #DQN
     mean_dqn = np.mean(rewards_dqn)
-    print(">>>>>>", rewards_dqn, demands_dqn)
-    fac_dqn = [(rewards_dqn[i] * np.max(listofDemands) / demands_dqn[i]) for i in range(len(rewards_dqn))]
+    fac_dqn = [(rewards_dqn[i] * np.max(listofDemands) / (demands_dqn[i] + 0.000001)) for i in range(len(rewards_dqn))]
     print(mean_dqn)
 
     #SAP
     mean_sap = np.mean(rewards_sap)
-    fac_sap = [(rewards_sap[i] * np.max(listofDemands) / demands_sap[i]) for i in range(len(rewards_sap))]
+    fac_sap = [(rewards_sap[i] * np.max(listofDemands) / (demands_sap[i] + 0.000001)) for i in range(len(rewards_sap))]
     print(mean_sap)
 
     #LB
     mean_lb = np.mean(rewards_lb)
-    fac_lb = [(rewards_lb[i] * np.max(listofDemands) / demands_lb[i]) for i in range(len(rewards_lb))]
+    fac_lb = [(rewards_lb[i] * np.max(listofDemands) / (demands_lb[i] + 0.000001)) for i in range(len(rewards_lb))]
     print(mean_lb)
     
     file = open("./result_logs/temp.txt", "a")
