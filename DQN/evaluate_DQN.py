@@ -682,7 +682,7 @@ if __name__ == "__main__":
     env_dqn.generate_environment(graph_topology, listofDemands, rand_size, rand_seed, plr_max, std_dev)
     
     dqn_agent = DQNAgent(env_dqn)
-    checkpoint_dir = "./models" + "sample_DQN_agent_orig"
+    checkpoint_dir = "./models" + "sample_DQN_agent_plr"
     
     checkpoint = tf.train.Checkpoint(model=dqn_agent.primary_network, optimizer=dqn_agent.optimizer)
     # Restore variables on creation if a checkpoint exists.
@@ -743,14 +743,15 @@ if __name__ == "__main__":
             "plr" : env_dqn.plr_feature[i],
             "dqn" : dqn_utilize[i],
             "sap" : sap_utilize[i],
-            "lb" : lb_utilize[i]
+            "lb" : lb_utilize[i],
+            "reliability" : env_dqn.betw_scale[i] / np.min(env_dqn.betw_scale) * env_dqn.plr_feature[i]
         }
         edge_utilize.append(edge_)
     
     def compare_edge(e):
-        return e["betw"]
+        return e["reliability"]
     
-    edge_utilize.sort(reverse = True, key = compare_edge)
+    edge_utilize.sort(reverse = False, key = compare_edge)
     
     fig = plt.figure()
     
