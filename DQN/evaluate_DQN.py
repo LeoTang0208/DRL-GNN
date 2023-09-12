@@ -380,7 +380,7 @@ def exec_lb_model_episodes(experience_memory, graph_topology):
                 v = currentpath[i + 1]
                 for j in range(len(link_load)):
                     if (((u == link_u[j]) and (v == link_v[j])) or ((u == link_v[j]) and (v == link_u[j]))):
-                        link_load[j] = link_load[j] + demand
+                        link_load[j] = link_load[j] + reward * env_lb.max_demand
             
             env_lb.demand = demand
             env_lb.source = source
@@ -413,7 +413,7 @@ def exec_lb_model_episodes(experience_memory, graph_topology):
                 v = currentpath[i + 1]
                 for j in range(len(link_load)):
                     if (((u == link_u[j]) and (v == link_v[j])) or ((u == link_v[j]) and (v == link_u[j]))):
-                        link_load[j] = link_load[j] + demand
+                        link_load[j] = link_load[j] + reward * env_lb.max_demand
             
             env_lb.demand = demand
             env_lb.source = source
@@ -480,7 +480,7 @@ def exec_sap_model_episodes(experience_memory, graph_topology):
                 v = currentpath[i + 1]
                 for j in range(len(link_load)):
                     if (((u == link_u[j]) and (v == link_v[j])) or ((u == link_v[j]) and (v == link_u[j]))):
-                        link_load[j] = link_load[j] + demand
+                        link_load[j] = link_load[j] + reward * env_sap.max_demand
             
             env_sap.demand = demand
             env_sap.source = source
@@ -513,7 +513,7 @@ def exec_sap_model_episodes(experience_memory, graph_topology):
                 v = currentpath[i + 1]
                 for j in range(len(link_load)):
                     if (((u == link_u[j]) and (v == link_v[j])) or ((u == link_v[j]) and (v == link_u[j]))):
-                        link_load[j] = link_load[j] + demand
+                        link_load[j] = link_load[j] + reward * env_sap.max_demand
             
             env_sap.demand = demand
             env_sap.source = source
@@ -575,7 +575,7 @@ def exec_dqn_model_episodes(experience_memory, env_dqn, agent):
                 v = currentpath[i + 1]
                 for j in range(len(link_load)):
                     if (((u == link_u[j]) and (v == link_v[j])) or ((u == link_v[j]) and (v == link_u[j]))):
-                        link_load[j] = link_load[j] + demand
+                        link_load[j] = link_load[j] + reward * env_dqn.max_demand
             
             rewardAdd = rewardAdd + reward
             if (not done):
@@ -604,7 +604,7 @@ def exec_dqn_model_episodes(experience_memory, env_dqn, agent):
                 v = currentpath[i + 1]
                 for j in range(len(link_load)):
                     if (((u == link_u[j]) and (v == link_v[j])) or ((u == link_v[j]) and (v == link_u[j]))):
-                        link_load[j] = link_load[j] + demand
+                        link_load[j] = link_load[j] + reward * env_dqn.max_demand
             
             rewardAdd = rewardAdd + reward
             if (not done):
@@ -714,6 +714,8 @@ if __name__ == "__main__":
     rewards_sap, load_sap, demands_sap = exec_sap_model_episodes(experience_memory, graph_topology)
     rewards_dqn, load_dqn, demands_dqn = exec_dqn_model_episodes(experience_memory, env_dqn, dqn_agent)
     
+    print(load_dqn)
+    
     link_u = []
     link_v = []
     for i, j in env_dqn.ordered_edges:
@@ -812,18 +814,19 @@ if __name__ == "__main__":
     #DQN
     mean_dqn = np.mean(rewards_dqn)
     fac_dqn = [(rewards_dqn[i] * np.max(listofDemands) / (demands_dqn[i] + 0.000001)) for i in range(len(rewards_dqn))]
-    print(mean_dqn)
+    print(np.mean(fac_dqn), mean_dqn)
 
     #SAP
     mean_sap = np.mean(rewards_sap)
     fac_sap = [(rewards_sap[i] * np.max(listofDemands) / (demands_sap[i] + 0.000001)) for i in range(len(rewards_sap))]
-    print(mean_sap)
+    print(np.mean(fac_sap), mean_sap)
 
     #LB
     mean_lb = np.mean(rewards_lb)
     fac_lb = [(rewards_lb[i] * np.max(listofDemands) / (demands_lb[i] + 0.000001)) for i in range(len(rewards_lb))]
-    print(mean_lb)
+    print(np.mean(fac_lb), mean_lb)
     
+    '''
     file = open("./result_logs/temp.txt", "a")
     file.write("----------------")
     
@@ -837,5 +840,6 @@ if __name__ == "__main__":
     file.flush()
     
     file.close()
+    '''
     
     plt.show()
