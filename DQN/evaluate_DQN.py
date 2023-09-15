@@ -682,7 +682,7 @@ if __name__ == "__main__":
     env_dqn.generate_environment(graph_topology, listofDemands, rand_size, rand_seed, plr_max, std_dev)
     
     dqn_agent = DQNAgent(env_dqn)
-    checkpoint_dir = "./models" + "sample_DQN_agent_plr"
+    checkpoint_dir = "./models" + "sample_DQN_agent_orig"
     
     checkpoint = tf.train.Checkpoint(model=dqn_agent.primary_network, optimizer=dqn_agent.optimizer)
     # Restore variables on creation if a checkpoint exists.
@@ -714,8 +714,6 @@ if __name__ == "__main__":
     rewards_sap, load_sap, demands_sap = exec_sap_model_episodes(experience_memory, graph_topology)
     rewards_dqn, load_dqn, demands_dqn = exec_dqn_model_episodes(experience_memory, env_dqn, dqn_agent)
     
-    print(load_dqn)
-    
     link_u = []
     link_v = []
     for i, j in env_dqn.ordered_edges:
@@ -746,29 +744,32 @@ if __name__ == "__main__":
             "dqn" : dqn_utilize[i],
             "sap" : sap_utilize[i],
             "lb" : lb_utilize[i],
-            "reliability" : env_dqn.betw_scale[i] / np.min(env_dqn.betw_scale) * env_dqn.plr_feature[i]
+            "rel" : env_dqn.betw_scale[i] / np.min(env_dqn.betw_scale) * env_dqn.plr_feature[i]
         }
         edge_utilize.append(edge_)
     
     def compare_edge(e):
-        return e["reliability"]
+        return e["betw"]
     
-    edge_utilize.sort(reverse = False, key = compare_edge)
+    edge_utilize.sort(reverse = True, key = compare_edge)
     
     fig = plt.figure()
     
     edges_arange = 4 * np.arange(len(env_dqn.ordered_edges))
-    plt.bar(edges_arange - 1, [e["dqn"] for e in edge_utilize], 1, color = "darkblue", label = "Deep Reinforcement Learning")
-    plt.bar(edges_arange + 0.0, [e["sap"] for e in edge_utilize], 1, color = "orange", label = "Shortest Available Path")
-    plt.bar(edges_arange + 1, [e["lb"] for e in edge_utilize], 1, color = "dodgerblue", label = "Load Balancing")
+    plt.bar(edges_arange - 1, [e["dqn"] for e in edge_utilize], 1, color = "darkblue", label = "DRL")
+    plt.bar(edges_arange + 0.0, [e["sap"] for e in edge_utilize], 1, color = "orange", label = "SAP")
+    plt.bar(edges_arange + 1, [e["lb"] for e in edge_utilize], 1, color = "dodgerblue", label = "LB")
     plt.xticks(edges_arange, [e["node"] for e in edge_utilize], rotation = 45)
     
     # plt.axis("tight")
     plt.xlim([edges_arange.min() - 2, edges_arange.max() + 2])
     plt.ylim([0.0, 1.001])
-    plt.xlabel("Links / Edges")
-    plt.ylabel("Link Utilization")
+    plt.xlabel("Links / Edges", fontsize=12)
+    plt.ylabel("Link Utilization", fontsize=12)
     plt.legend(loc = "upper left")
+    
+    reliability = np.mean([(env_dqn.betw_scale[i] / np.min(env_dqn.betw_scale) * env_dqn.plr_feature[i]) for i in range(env_dqn.numEdges)])
+    # plt.title('R = %.2f' %(reliability))
     
     plt.margins(0.05, 0)
     
