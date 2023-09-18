@@ -749,9 +749,9 @@ if __name__ == "__main__":
         edge_utilize.append(edge_)
     
     def compare_edge(e):
-        return e["betw"]
+        return e["rel"]
     
-    edge_utilize.sort(reverse = True, key = compare_edge)
+    edge_utilize.sort(reverse = False, key = compare_edge)
     
     fig = plt.figure()
     
@@ -763,7 +763,7 @@ if __name__ == "__main__":
     
     # plt.axis("tight")
     plt.xlim([edges_arange.min() - 2, edges_arange.max() + 2])
-    plt.ylim([0.0, 1.001])
+    plt.ylim([0.0, (np.max(dqn_utilize) * 1.5)]) # 1.001
     plt.xlabel("Links / Edges", fontsize=12)
     plt.ylabel("Link Utilization", fontsize=12)
     plt.legend(loc = "upper left")
