@@ -21,12 +21,16 @@ pip install -e gym-environments/
 python train_DQN.py
 ```
 
-5. Now that the training process is executing, we can see the DQN agent performance evolution by parsing the log files.
+5. Finally, we can evaluate our trained model on different topologies executing the command below. Notice that in the *evaluate_DQN.py* script you must modify the hyperparameters of the model to match the ones from the trained model.
 ```
-python parse.py -d ./Logs/expsample_DQN_agentLogs.txt
+python evaluate_DQN.py -d ./Logs/expsample_DQN_agentLogs.txt -s 0 -e 0 -p 0.0 -v 0.0
 ```
 
-6. Finally, we can evaluate our trained model on different topologies executing the command below. Notice that in the *evaluate_DQN.py* script you must modify the hyperparameters of the model to match the ones from the trained model.
-```
-python evaluate_DQN.py -d ./Logs/expsample_DQN_agentLogs.txt
-```
+The parameters:
+
+* `-s` : The size of the randomly generated topology. Only used in randomly generated topology.
+* `-e` : The randomizer seed used in the environment.
+* `-p` : Maximun PLR.
+* `-v` : Standard Deviation Indicator ($\gamma$).
+
+We provide a script (`test.py`) to execute multiple experiments.
