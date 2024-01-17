@@ -4,7 +4,7 @@
 
 * results_orig_diff_capa : 2 parts, (1) k=4, trained std_dev=0, k=4, plr=0, tested on diff capacity; (2) k=8, trained under std_dev=3.0, k=8, ...
 
-* results_plr.txt : for different plr distribution, see evaluate_DQN for explaination
+* results_plr.txt : for different plr distribution, see evaluate_DQN for explanation
 
 * results_NSFnet_plr.txt : for NSFnet with plr (10%) (boxplot)
 
